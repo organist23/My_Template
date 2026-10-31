@@ -30,11 +30,14 @@ project and must not load in other projects.
 
 The workflow calls plugins it does not include. Without them, steps fail silently.
 
-| Plugin | Source | Used in |
-|---|---|---|
-| `superpowers` | Anthropic official marketplace | steps 5, 7, 9, 11 |
-| `ponytail` | community, `dietrichgebert/ponytail` | steps 6, 10 |
-| `mattpocock-skills` | Anthropic official marketplace | optional: `wayfinder`, `to-spec`, `to-tickets` |
+| Plugin | Source | Tested with | Used in |
+|---|---|---|---|
+| `superpowers` | Anthropic official marketplace | 7.0.0 | steps 5, 7, 9, 11 |
+| `ponytail` | community, `dietrichgebert/ponytail` | 5.3.3 | steps 6, 10 |
+| `mattpocock-skills` | Anthropic official marketplace | 1.3.1 | optional: `wayfinder`, `to-spec`, `to-tickets` |
+
+The skills quote these versions. After a plugin update, re-check `feature-workflow`'s
+Constraints section before relying on it.
 
 In Claude Code, run these from the template folder. When asked for a scope, pick
 **project**. That writes `.claude/settings.json`, so the plugin list is saved
@@ -111,11 +114,10 @@ If the project has no live system yet, skip this step and tell Claude in step 8:
 ### Stage A. New project or vague idea → project-workflow (steps 1–4)
 
 ```
-/project-workflow I want to <goal in your own words>. Save the spec to spec.md.
+/project-workflow I want to <goal in your own words>.
 ```
 
-The skill does not name a file for the spec. Ask for `spec.md` so later sessions
-can read it.
+The skill saves the spec to `spec.md`, which step 8 reads.
 
 What happens, and what you do:
 
@@ -191,7 +193,7 @@ hours. The `[PONYTAIL]` badge does not prove the rules are still in context.
 
 | Situation | Prompt |
 |---|---|
-| New project | `/project-workflow I want to <goal>. Save the spec to spec.md.` |
+| New project | `/project-workflow I want to <goal>.` |
 | Have a spec | `/project-workflow Here is my spec: spec.md. Check it, then slice it into roadmap.md.` |
 | Build next phase | `/feature-workflow Build the phase marked NEXT in roadmap.md. The spec is spec.md.` |
 | Bug | `/feature-workflow Bug: <symptom, expected, repro>.` |
