@@ -71,7 +71,8 @@ Example:
 
 ## 2. Spec — write numbered user stories with acceptance criteria
 
-Turn the confirmed goal into a spec. Each user story is numbered because
+Turn the confirmed goal into a spec saved as `spec.md` at the project root.
+Each user story is numbered because
 `feature-workflow` step 8 uses these numbers as the E2E test matrix.
 
 ### Format

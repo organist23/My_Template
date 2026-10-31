@@ -44,8 +44,8 @@ reuse a token. Never fewer states or a plainer control.
 Trade UI away for performance only with a measurement showing the current
 version is too slow. "It'd be simpler" is not that measurement.
 
-Ponytail 4.8.4 already refuses to cut the *design system* (no native
-`alert`/`confirm`, no unstyled controls). What it does not cover is rung 1,
+Ponytail 5.3.3 already protects the *design system* ("a house component beats
+a native widget") and never cuts accessibility. What it does not cover is rung 1,
 which cannot tell a speculative abstraction from a loading state. That is the
 gap this closes.
 
@@ -54,9 +54,9 @@ gap this closes.
 The `SessionStart` hook injects ponytail's ladder **once per session**. Nothing
 re-injects it: `ponytail-mode-tracker.js` re-emits the ruleset only under
 `if (isQoder)`, `/ponytail` emits a one-line banner, and `commands/ponytail.toml`
-is a five-line paraphrase carrying the ladder without any of its guardrails —
-no "never simplify away the design system", no "never lazy about understanding
-the problem", no validation/security/a11y exceptions.
+is a one-paragraph paraphrase carrying the ladder without its guardrails —
+no "never cut" list (validation, security, accessibility), no "a house component
+beats a native widget", no "never lazy about the change itself".
 
 - **Re-arm by invoking the skill** (`ponytail:ponytail`). That is the only thing
   that reloads the full ruleset mid-session. `/clear` and `/compact` re-fire
@@ -77,7 +77,7 @@ Fixed rulings. Do not re-decide these per task:
 | ponytail's "one runnable check, no frameworks" vs `superpowers:test-driven-development` | **TDD wins.** |
 | ponytail rung 1 vs UI surface | **UI wins.** See ponytail scope above. |
 | An implementer's "left it per YAGNI" vs a reviewer's finding | **The reviewer wins.** `subagent-driven-development/task-reviewer-prompt.md` is explicit: a stated rationale never downgrades a finding's severity. Ponytail licenses building less, not defending after the fact. |
-| A `mattpocock-skills` skill vs the skill a step names | **The named skill wins.** That plugin is installed for `wayfinder`, `to-spec`, and `to-tickets` only — all three explicit-invoke. But 11 of its other skills auto-invoke, and these overlap steps here: `codebase-design`, `domain-modeling`, `research`, `prototype`, `grilling` (step 5), `tdd`, `diagnosing-bugs`, `implement` (step 7), `code-review` (step 10), `resolving-merge-conflicts` (step 11). Use what the step names, not what fires. |
+| A `mattpocock-skills` skill vs the skill a step names | **The named skill wins.** That plugin (1.3.1) is installed for `wayfinder`, `to-spec`, and `to-tickets` only — all three explicit-invoke. But 11 of its skills auto-invoke, and 9 overlap steps here: `codebase-design`, `domain-modeling`, `research`, `prototype`, `grilling` (step 5), `tdd`, `diagnosing-bugs` (step 7), `code-review` (step 10), `pr` (step 11). Use what the step names, not what fires. |
 
 ### Test integrity
 
@@ -141,6 +141,9 @@ Where a project's own instructions name a different driver for its UI, that wins
 
 Turns "what" into "in what order, touching which files".
 
+Plan the phase marked NEXT in `roadmap.md`, from the stories it covers in
+`spec.md`. A bug or a request with no spec plans from the request itself.
+
 Skip `superpowers:brainstorming` if a map or spec already decided it. Keep it for
 implementation-level choices nothing has reached yet.
 
@@ -168,11 +171,12 @@ Bug instead of a plan → `superpowers:systematic-debugging` first.
 ## 8. Real-world E2E — prove it against the actual system
 
 Read `e2e-testing` before running a live pass — it covers isolation, setup,
-and teardown for shared environments.
+and teardown for shared environments. If the project has no `e2e-testing`
+skill, use the project's own runner against a real process (driver table below).
 
 Unit, lint, and API tests prove the pieces. This proves the *use case*.
 
-**Where the cases come from:** the numbered user stories from the spec. One
+**Where the cases come from:** the numbered user stories in `spec.md`. One
 story = one scenario, and each of its "Accepts when" and "Rejects when"
 conditions is one assertion in that scenario. The test matrix is already written; don't re-invent it at
 test time. Entered without a spec, enumerate the user-visible outcomes first.
@@ -201,12 +205,17 @@ injection-ish payloads · offline or interrupted mid-flow.
 *Check the project's instruction file first* — some projects forbid one of these
 outright, and that overrides this table.
 
-`superpowers` 6.3.0 has zero E2E or browser coverage; all 14 skills assume a fast
+**Record the pass** in `PHASE-<N>-TEST-RESULTS.md`: date, driver, pass/fail per
+story and per assertion, and anything left behind. Step 12 links it from
+`roadmap.md`.
+
+`superpowers` 7.0.0 has zero E2E or browser coverage; all 15 skills assume a fast
 unit runner. This step is not duplicating an existing skill.
 
 ## 9. `superpowers:verification-before-completion`
 
-Evidence before assertions. Run every command, read the output, then claim done.
+Evidence before assertions. Run the test command from CLAUDE.md "Project facts"
+and every other check, read the output, then claim done.
 
 ## 10. Review: complexity, then correctness, then security
 
