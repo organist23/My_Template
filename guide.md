@@ -187,8 +187,8 @@ hours. The `[PONYTAIL]` badge does not prove the rules are still in context.
 ```
 
 This also works after the whole system is DONE. Claude classifies the change,
-shows you a change note, edits only the affected stories and phases, asks for
-your OK, then returns to feature-workflow step 5. Completed phases stay as
+shows you a change note, waits for your OK, then edits only the affected stories
+and phases and returns to feature-workflow step 5. Completed phases stay as
 they are. A change to one gets a new "Reopens Phase N" phase.
 
 ### Stage F. Cleanup
@@ -204,7 +204,8 @@ nothing until you approve the list.
 
 ## Part 3 — Rules to remember
 
-- **One phase at a time.** Never start a LATER phase before NEXT is DONE.
+- **One phase at a time.** Never start a LATER phase before NEXT is DONE, unless
+  an Amend you approved pauses NEXT.
 - **Do not log in for Claude.** When a browser test hits a login, Claude stops. Log
   in yourself in that Chrome window, then say "done".
 - **Reviews report, you decide.** Do not use `/simplify` or `/code-review --fix` at

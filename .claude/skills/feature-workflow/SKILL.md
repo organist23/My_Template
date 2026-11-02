@@ -116,8 +116,10 @@ E2E is where green-by-construction hides best.
   on purpose — return empty, flip the branch, drop the side effect — and confirm
   it goes red. Still green = decoration; delete or rewrite it.
 - **Capture fixtures, don't invent them.** Record one real payload (real API
-  response, real session, real upload) and commit it. Invented fixtures encode
-  assumptions about the data; captured ones encode the data.
+  response, real session, real upload) from a test environment and commit it.
+  Before committing, replace tokens, keys, and personal data with fake values of
+  the same shape. Invented fixtures encode assumptions about the data; captured
+  ones encode the data.
 - **Mock only at the outer boundary** — third-party call, clock, network.
   Anything stubbed between the entry point and the assertion means the stub is
   under test.
@@ -159,10 +161,10 @@ Where a project's own instructions name a different driver for its UI, that wins
 
 | Situation | Start at |
 |---|---|
-| Bug, small fix, or small improvement that changes no story, schema, API, or business rule, and is not a redesign (a new layout or flow for a page or module) | step 6 re-arm (no plan to cut, re-arm only), then step 7 (`systematic-debugging` first for a bug). No roadmap entry |
+| Cleanup of files or docs | **Cleanup** below |
+| Bug, small fix, or small improvement that changes no story, schema, API, or business rule, and is not a redesign (a new layout or flow for a page or module) | step 6 re-arm (no plan to cut, re-arm only), then step 7 (`systematic-debugging` first for a bug). No roadmap entry. Write the step 5 Test scope block before step 7, and record step 8 in `docs/test-results/FIX-<date>-<slug>.md` |
 | A requirement is added, changed, removed, or conflicts, or a redesign, schema, API, or business-rule change, before, during, or after the build | pause. Run `project-workflow` **Amend**, then go where its table sends you. A change to the NEXT phase resumes at step 5 with the plan revised, not rewritten |
 | Spec or plan already decided | step 5 |
-| Cleanup of files or docs | **Cleanup** below |
 | Can't yet name the questions | stop — use `project-workflow` |
 
 The first matching row wins.
@@ -217,6 +219,9 @@ Read `.claude/skills/e2e-testing/SKILL.md` before running a live pass — it
 covers isolation, setup, and teardown for shared environments. If that file is
 missing or is still the template placeholder, use the project's own runner
 against a real process (driver table below), never against production data.
+A read-only check of production that a phase's "Done when" names (open the live
+site, call a function that must refuse) is allowed. It creates, changes, and
+deletes nothing, and uses no stored credentials.
 
 Unit, lint, and API tests prove the pieces. This proves the *use case*.
 
@@ -261,6 +266,9 @@ the naming:
   each story's edge cases again.
 - `tests/fixtures/`: captured fixtures shared by both.
 
+In a project with one spec file per app, a story is a `describe` block named
+`US-<n>`, and "run its spec" means `--grep "US-<n>"`.
+
 Regression is a selection of feature specs, not a separate suite. A scenario
 lives in one spec. Later phases rerun it and never copy it.
 
@@ -272,11 +280,13 @@ committed specs in this layout before the phase is done.
 1. `git diff --name-only <base>...HEAD` lists the changed files, where `<base>`
    is the branch the phase started from (usually `main`). The hunk headers of
    `git diff -U0 <base>...HEAD` name the changed functions.
-2. Grep the callers of what changed. Match the changed files, their directories,
-   and the changed function, component, and table names against each DONE
-   phase's "Shipped as" entries in `roadmap.md`. When an entry names functions
-   or components, match those names, not the whole file. A schema change matches
-   every phase whose entries name the changed table.
+2. Grep the callers of what changed, and their callers, until you reach a name
+   a "Shipped as" entry lists. Match the changed files and every changed or
+   calling function, component, and table name against each DONE phase's
+   "Shipped as" entries in `roadmap.md`. When an entry names functions or
+   components, match those names, not the whole file. A directory entry matches
+   only through the names it lists. A schema change matches every phase whose
+   entries name the changed table.
 3. Matched phases give their US numbers, which give their feature specs. Run
    those, plus every system spec whose workflow includes a matched story, plus
    every spec that uses a test helper or selector bound to changed UI.
@@ -289,8 +299,8 @@ committed specs in this layout before the phase is done.
 
 - the merged phase completes a `## Part` of `roadmap.md`, or before a release
 - the diff changes a schema or migration, auth or sessions, a dependency
-  version, or a function, component, or table named in the "Shipped as" of two
-  or more phases
+  version, a business rule, or a function, component, or table named (directly
+  or through its callers) in the "Shipped as" of two or more phases
 - Regression selection cannot bound the impact
 
 Otherwise it does not run.
@@ -395,9 +405,10 @@ a cleanup task.
 3. Never candidates: `spec.md`, `roadmap.md`, `CLAUDE.md`, `docs/test-results/`,
    ADRs, config, and fixtures a spec still references.
 4. Present the list with the evidence per file. Delete or move only what the
-   user approves, in one commit. Move a file only when its location breaks a
-   stated convention.
-5. Then steps 9 and 10, as for any change.
+   user approves, in one commit on its own branch. Move a file only when its
+   location breaks a stated convention.
+5. Then steps 8 to 11, as for any change. Step 8 runs Regression selection only
+   and records it in `docs/test-results/CLEANUP-<date>.md`.
 
 ---
 

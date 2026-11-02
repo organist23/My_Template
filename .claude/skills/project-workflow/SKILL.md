@@ -234,9 +234,9 @@ story can change another). Apply each row that matches.
 | Undo a past decision | edit the story, `Changed` line naming the date of the behavior it restores. A technical decision with no story: no edit | a new phase. A technical decision or a recorded user decision gets the line `Supersedes Phase <N> convention: <old> → <new>, <reason>` (or `decision`) | a forward change, built as a phase. To `git revert` instead, see **Reverting a phase** below |
 | UI or flow redesign | conditions unchanged: no edit. Conditions changed: as for a changed story | a new phase, `Reopens Phase <N>: <what changes>` | its E2E specs are updated without weakening any assertion |
 | Schema, API, or business-rule change | as above for each affected story. No story text changes: no edit | always a new phase, even when no story text changes | the Test scope must include Regression selection (`feature-workflow` step 8) |
-| Schema change with existing data | as above | as above | the plan includes the migration, how existing values map to the new columns (the user approves the mapping), a backup, a way to reverse it, and every reader of the old columns (code, APIs, reports, exports). The migration and its reverse run first on a test copy the user provides (an export or backup restored into a throwaway deployment). The schema changes in two deploys: first add the new fields as optional and migrate, then remove the old field in a later phase, because the deployed schema must accept every existing row. The plan states the production order (deploy, dry run, run) for the user to carry out. Never run it against production data yourself. Any loss of existing data needs the user's decision |
+| Schema change with existing data | as above | as above | the plan includes the migration, how existing values map to the new columns (the user approves the mapping), a backup, a way to reverse it that touches only rows the migration changed, and every reader of the old columns (code, APIs, reports, exports, and installed clients still running older builds). The dry run reports each case of the mapping with real examples, so the user approves the mapping on the data, not on a count. The migration and its reverse run first on a test copy the user provides (an export or backup restored into a throwaway deployment). The schema changes in two deploys: first add the new fields as optional and migrate, then remove the old field in a later phase, because the deployed schema must accept every existing row. The plan states the production order (deploy, dry run, run) for the user to carry out. If a push deploys automatically, the user decides when the change is merged. Never run it against production data yourself. Any loss of existing data needs the user's decision |
 
-**Reverting a phase.** Only when the user asks:
+**Reverting a phase.** Only when the user asks, and after the change note is approved (Amend step 3):
 
 1. `git diff --name-only <merge> main` (or the branch that holds the merge) lists only `spec.md`, `roadmap.md`, and
    results files (`docs/test-results/`, or older root `PHASE-*-TEST-RESULTS.md`).
@@ -265,8 +265,8 @@ and a plan summary as a change note.
 **3. Approval.** The change note needs the user's OK before any doc or code
 change. A clarification that edits nothing is the only exception.
 
-**4. Return** to `feature-workflow` step 5 for the affected phase. One phase at
-a time still holds: a reopen phase waits as LATER unless the user moves it to
+**4. Return** to `feature-workflow` step 5 when the affected phase is NEXT. Otherwise
+it waits in the roadmap. One phase at a time still holds: a reopen phase waits as LATER unless the user moves it to
 NEXT. To build it ahead of an unfinished NEXT phase, the unfinished phase goes
 back to LATER with the line `Paused <date>: <reason>`, keeps its branch, and
 becomes NEXT again when the new phase is DONE. If no phase is NEXT, the new phase becomes NEXT. When one Amend creates
