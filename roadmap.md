@@ -10,7 +10,7 @@ Covers US-<N>, US-<N>.
 - <User-visible outcome>
 - <User-visible outcome>
 
-**Done when:** <checkable condition>. — **Verified** on <date> with <driver from `feature-workflow` step 8>, <what was checked>. Results: `PHASE-<N>-TEST-RESULTS.md`.
+**Done when:** <checkable condition>. — **Verified** on <date> with <driver from `feature-workflow` step 8>, <what was checked>. Results: `docs/test-results/PHASE-<N>-TEST-RESULTS.md`. Regression: <US specs re-run | none, reason>.
 
 Shipped as `<file>`: <functions>.
 
@@ -40,6 +40,7 @@ Covers US-<N>.
 
 ### Phase 3 — <Name> LATER
 
+Reopens Phase <N>: US-<n> changed on <date>.
 Covers US-<N>.
 
 - <One outcome>

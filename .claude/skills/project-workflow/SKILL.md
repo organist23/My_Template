@@ -6,7 +6,9 @@ description: >-
   with numbered user stories, slices it into phases for roadmap.md, and routes
   each slice to feature-workflow. Use when the user types "/project-workflow",
   when starting a new project, or when a request is too vague for feature-workflow
-  to consume. Once the spec and slices exist, hand off to feature-workflow per slice.
+  to consume. Also use when an approved requirement is added, changed, removed,
+  or conflicts with another. Once the spec and slices exist, hand off to
+  feature-workflow per slice.
 ---
 
 # Project Workflow
@@ -41,6 +43,7 @@ Meet them where they are:
 | Goal is clear but no spec or user stories | Start at step 2 |
 | Spec exists but work isn't sliced into phases | Check the spec against step 2's rules, then step 3 |
 | Phases exist in roadmap.md, ready to build | Skip — go to `feature-workflow` step 5 |
+| Spec approved, and a requirement is added, changed, removed, or conflicts | **Amend** below |
 
 ---
 
@@ -102,6 +105,9 @@ Each user story is numbered because
 ### US-2: <Next action>
 ...
 
+## Critical workflows
+- CW-1: <name>: US-1 → US-3 → US-5
+
 ## Out of Scope
 - <Things explicitly not built, and why>
 
@@ -114,7 +120,18 @@ Each user story is numbered because
 - **Every story is testable.** Each story becomes one E2E scenario in
   `feature-workflow` step 8, and each "Accepts when" and "Rejects when"
   condition becomes one assertion in it. If you can't test it, rewrite it.
-- **Number every story.** `feature-workflow` references them by number.
+- **Number every story. Numbers are permanent.** `feature-workflow`, test
+  results, and `roadmap.md` reference them. Never renumber or reuse one. A
+  changed story gets `Changed <date>: <reason>` under its heading. A removed
+  story gets `Withdrawn <date>: <reason>` and keeps its number.
+- **Safeguards are criteria.** A story with a consequential action (delete,
+  deactivate, approve, logout, editing a business record) lists the safeguards
+  from `feature-workflow` **Safeguards by risk** as "Accepts when" and "Rejects
+  when" conditions. A policy the user has not decided (soft or hard delete,
+  retention) goes to Open Questions.
+- **Name the critical workflows.** Flows that cross several stories and break
+  the business when they fail. Each becomes one system E2E spec in
+  `feature-workflow` step 8. Keep the list short.
 - **Include "Rejects when."** The happy path is half the spec. What happens on
   bad input, duplicate events, auth failure, timeout?
 - **List what's out of scope.** This feeds the "Deliberately not built" line in
@@ -159,48 +176,18 @@ Phase 2: US-5 (dashboard)                       ← builds on Phase 1
 - **Each phase states what it deliberately does NOT build** and which later
   phase owns it. This is what ponytail (in `feature-workflow`) enforces during
   the build — if it's not in this phase's stories, it gets cut.
+- **DONE phases are history.** Never renumber or edit them. LATER phases may be
+  renumbered, reordered, or inserted.
+- **A phase too big for one build** splits into Phase Na and Nb before it
+  starts. Found mid-build: stop and propose the split.
+- **Bug fixes get no phase.** They run through the `feature-workflow` Gate.
 
 ### Output — populate `roadmap.md`
 
-Fill in the template with real content:
-
-```markdown
-# Roadmap
-
-## Part one — Core task automation
-
-### Phase 0 — Webhook listener NEXT
-
-Proves the core loop: Clio webhook → Convex → task created in Clio.
-Covers US-1, US-2.
-
-- A stage change on a matter creates one task assigned to the responsible attorney
-- Duplicate stage changes do not create duplicate tasks
-
-**Done when:** a stage change on a test matter creates exactly one correctly
-assigned task within 30 seconds.
-
-Deliberately not built, and why: task templates (Phase 1 owns it),
-dashboard (Phase 2 owns it).
-
-### Phase 1 — Task templates LATER
-
-Covers US-3, US-4.
-
-- Attorneys can define task templates per stage
-- Templates support due-date offsets relative to the stage change date
-
-**Done when:** a stage change creates a task using the matching template
-with the correct due date.
-
-Deliberately not built, and why: dashboard (Phase 2 owns it).
-
-### Phase 2 — Dashboard LATER
-
-Covers US-5.
-
-- Web UI showing recent runs, failures, and task counts per matter
-```
+`roadmap.md` is the single template for phase entries: NEXT, LATER, reopened,
+and the DONE fields step 12 adds. Replace its placeholders with real phases.
+Keep its `## Part` headings. The end of a Part is a full-E2E milestone in
+`feature-workflow` step 8.
 
 ---
 
@@ -225,6 +212,46 @@ From here, `feature-workflow` takes over:
 
 ---
 
+## Amend — when an approved requirement changes
+
+Use when `spec.md` is approved and a requirement is added, changed, removed, or
+conflicts with another, before, during, or after the build, including when every
+phase is DONE. Revisit only what the change touches. Completed work and phase history stay.
+
+**1. Classify, then act.** One request can match several rows (removing one
+story can change another). Apply each row that matches.
+
+| Change | `spec.md` | `roadmap.md` | Build |
+|---|---|---|---|
+| Clarification, story text unchanged | no edit | no edit | continue |
+| A story in the NEXT phase changes | edit the story, add a `Changed` line | edit the NEXT phase only if its outcomes or "Done when" change | revise the plan (step 5), cut the revision (step 6) |
+| New requirement | new US number | add it to a LATER phase or a new phase | current phase unchanged unless the user says otherwise |
+| Conflicts with an approved story | no edit until the user picks | no edit | stop, show both stories, user decides, then classify again |
+| Changes a story of a DONE phase | edit the story, add a `Changed` line | new LATER phase with the line `Reopens Phase <N>: US-<n> changed`. The DONE entry stays untouched | built as its own phase |
+| Requirement removed or replaced | `Withdrawn` line, number kept, removed from `## Critical workflows` | remove it from LATER phases | the phase that removes the behavior deletes its tests. Its stored data stays unless the user decides otherwise |
+| Undo a past decision | edit the story, `Changed` line naming the date of the behavior it restores | as for any changed story | a forward change, built as a phase. `git revert` only for the most recent merge, with nothing built on it, and only when the user asks |
+| UI or flow redesign | conditions unchanged: no edit. Conditions changed: as for a changed story | as for a changed story, if conditions changed | conditions unchanged: `feature-workflow` Gate, small improvement, and its E2E specs are updated |
+| Schema, API, or business-rule change | as above for each affected story. No story text changes: no edit | always a new phase, even when no story text changes | the Test scope must include Regression selection (`feature-workflow` step 8) |
+| Schema change with existing data | as above | as above | the plan includes the migration, a backup, and a way to reverse it. Any loss of existing data needs the user's decision |
+
+**2. Impact.** Read `spec.md`, `roadmap.md`, the code and callers in the
+affected files, their tests, the latest `docs/test-results/`, and the schema.
+List the affected stories, the phases that shipped them (the "Shipped as" lines
+in `roadmap.md`), the modules, tables, APIs, existing data, and their E2E specs
+(feature and critical workflow). Show the user this list, the classification,
+and a plan summary as a change note.
+
+**3. Approval.** The change note needs the user's OK before any doc or code
+change. A clarification that edits nothing is the only exception.
+
+**4. Return** to `feature-workflow` step 5 for the affected phase. One phase at
+a time still holds: a reopen phase waits as LATER unless the user moves it to
+NEXT after the current NEXT is finished or stopped. If no phase is NEXT, the new
+phase becomes NEXT. When every phase is DONE, new phases go under a new
+`## Part` heading, so finishing that Part triggers a full E2E run.
+
+---
+
 ## The full picture
 
 ```
@@ -239,6 +266,8 @@ project-workflow                    feature-workflow
                              ←──    11. Merge
                                     12. Update roadmap ──→ next NEXT phase
                              ──→        (loop back to step 5)
+
+Amend  ←── requirement change at any step ──→  back to step 5
 ```
 
 ---
@@ -255,3 +284,5 @@ project-workflow                    feature-workflow
   Phase 0's job is to prove the architecture, not ship the product.
 - **Open questions carried into slicing.** Foggy stories produce foggy phases
   that get re-sliced mid-build.
+- **Restarting the cycle for a change.** Amend touches only the affected
+  stories and phases.

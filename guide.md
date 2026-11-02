@@ -12,15 +12,18 @@ template/
 ├── guide.md                                ← this file, stays in the template
 ├── .claude/
 │   └── skills/
-│       ├── project-workflow/SKILL.md       ← /project-workflow (steps 1–4)
-│       └── feature-workflow/SKILL.md       ← /feature-workflow (steps 5–12)
+│       ├── project-workflow/SKILL.md       ← /project-workflow (steps 1–4, Amend)
+│       ├── feature-workflow/SKILL.md       ← /feature-workflow (steps 5–12, Cleanup)
+│       └── e2e-testing/SKILL.md            ← placeholder, replace per project (Step 4)
 └── examples/
     └── e2e-testing-clio.md                 ← model for your project's e2e skill
 ```
 
-Claude Code loads skills only from `.claude/skills/<name>/SKILL.md`. The e2e
-example sits outside that folder on purpose. It is specific to the Firm B Clio
-project and must not load in other projects.
+Claude Code loads skills only from `.claude/skills/<name>/SKILL.md`. The
+`e2e-testing` placeholder is marked `disable-model-invocation`, and step 8
+ignores it until you replace it. The Clio example sits outside that folder on
+purpose. It is specific to the Firm B Clio project and must not load in other
+projects.
 
 ---
 
@@ -34,7 +37,7 @@ The workflow calls plugins it does not include. Without them, steps fail silentl
 |---|---|---|---|
 | `superpowers` | Anthropic official marketplace | 7.0.0 | steps 5, 7, 9, 11 |
 | `ponytail` | community, `dietrichgebert/ponytail` | 5.3.3 | steps 6, 10 |
-| `mattpocock-skills` | Anthropic official marketplace | 1.3.1 | optional: `wayfinder`, `to-spec`, `to-tickets` |
+| `mattpocock-skills` | Anthropic official marketplace | 1.3.1 | optional: `wayfinder`, `to-spec`, `to-tickets`. They need `/setup-matt-pocock-skills` and an issue tracker, and publish there instead of `spec.md` and `roadmap.md`. Do not mix them with project-workflow in one project |
 
 The skills quote these versions. After a plugin update, re-check `feature-workflow`'s
 Constraints section before relying on it.
@@ -81,7 +84,8 @@ Open Claude Code in the project and accept the trust prompt. Type `/` and confir
 ### Step 3. Fill in "Project facts" in CLAUDE.md
 
 Section 3 of CLAUDE.md has placeholders that `feature-workflow` reads: trust
-boundaries for step 10, the UI test driver for step 8, and the test command.
+boundaries for step 10, the UI test driver for step 8, the fast test command
+(every phase), and the full E2E command (only when step 8 triggers it).
 Fill them in, or let Claude do it:
 
 ```
@@ -91,12 +95,14 @@ then fill in the "## 3. Project facts" placeholders in CLAUDE.md. Change nothing
 
 ### Step 4. Write a project-specific e2e-testing skill
 
-Step 8 reads an `e2e-testing` skill. The template ships only the Clio example.
-Use it as the model, not the content.
+Step 8 reads `.claude/skills/e2e-testing/SKILL.md`. The template ships a
+placeholder there and the Clio example in `examples/`. Use the example as the
+model, not the content.
 
 ```
-Read C:\Users\Admin\Desktop\sample_md_files\examples\e2e-testing-clio.md as a model only. Write
-.claude/skills/e2e-testing/SKILL.md for THIS project with the same sections:
+Read C:\Users\Admin\Desktop\sample_md_files\examples\e2e-testing-clio.md as a model only. Replace
+the placeholder .claude/skills/e2e-testing/SKILL.md for THIS project. Remove
+disable-model-invocation and write a description that says when to use it. Use the same sections:
 isolation from live, setup, prove isolation before creating data, during the pass,
 teardown, common mistakes. Keep its safety patterns: a pinned test target that
 refuses to run when unset or pointing at production, reads-only against
@@ -148,7 +154,7 @@ Start each phase in a fresh session:
 | 5. Plan | writes the implementation plan | `Write the plan for the NEXT phase.` |
 | 6. Cut gate | re-arms ponytail, cuts speculative plan steps | `Invoke ponytail:ponytail and cut the plan.` |
 | 7. Code + TDD | tests first, then code | `Execute the plan with TDD.` |
-| 8. E2E | one scenario per story, one assertion per Accepts/Rejects condition | `Run step 8 using the e2e-testing skill.` |
+| 8. E2E | this phase's stories, plus DONE-phase specs only if regression selection picks them. Full suite only on a trigger | `Run step 8. Show the Test scope first.` |
 | 9. Verify | runs every command, reads output | `Verify before claiming done.` |
 | 10. Review | complexity, then correctness, then security if gated | `/ponytail-review`, then `/code-review`, then `/security-review` |
 | 11. Merge | merge, rebase, or abandon | `Finish the branch.` |
@@ -174,6 +180,26 @@ Invoke ponytail:ponytail to re-arm the ruleset.
 Do this after every `/compact` or `/clear`, and whenever the session has run for
 hours. The `[PONYTAIL]` badge does not prove the rules are still in context.
 
+### Stage E. A requirement changes
+
+```
+/project-workflow Amend: <what changed and why>.
+```
+
+This also works after the whole system is DONE. Claude classifies the change,
+shows you a change note, edits only the affected stories and phases, asks for
+your OK, then returns to feature-workflow step 5. Completed phases stay as
+they are. A change to one gets a new "Reopens Phase N" phase.
+
+### Stage F. Cleanup
+
+```
+/feature-workflow Cleanup: <area, or "whole repo">.
+```
+
+Claude runs `/ponytail-audit`, checks references for each candidate, and deletes
+nothing until you approve the list.
+
 ---
 
 ## Part 3 — Rules to remember
@@ -183,7 +209,8 @@ hours. The `[PONYTAIL]` badge does not prove the rules are still in context.
   in yourself in that Chrome window, then say "done".
 - **Reviews report, you decide.** Do not use `/simplify` or `/code-review --fix` at
   step 10.
-- **E2E results** go in `PHASE-<N>-TEST-RESULTS.md`, and roadmap.md links them.
+- **E2E results** go in `docs/test-results/PHASE-<N>-TEST-RESULTS.md`, and
+  roadmap.md links them.
 - **Template updates:** fix gaps here in `sample_md_files` first, then re-copy into
   projects. Edits made inside one project do not flow back.
 
@@ -198,4 +225,7 @@ hours. The `[PONYTAIL]` badge does not prove the rules are still in context.
 | Build next phase | `/feature-workflow Build the phase marked NEXT in roadmap.md. The spec is spec.md.` |
 | Bug | `/feature-workflow Bug: <symptom, expected, repro>.` |
 | After /compact | `Invoke ponytail:ponytail to re-arm the ruleset.` |
+| Requirement changed | `/project-workflow Amend: <change>.` |
+| Cleanup | `/feature-workflow Cleanup: <area>.` |
+| Full system E2E (release) | `Run the Full E2E command from CLAUDE.md and record it in docs/test-results/.` |
 | Where am I? | `Read roadmap.md and tell me which phase is NEXT and which step we are on.` |

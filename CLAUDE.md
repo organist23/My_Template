@@ -46,5 +46,6 @@ Fill in per project. `feature-workflow` reads these.
 
 - Trust boundaries (step 10 runs `/security-review` when a diff touches these): <auth, payments, file upload, ...>
 - UI test driver (step 8, only if not `claude-in-chrome`): <Playwright / Cypress / none>
-- Test command: <npm test / pytest / ...>
+- Test command (fast unit and integration suite, runs every phase): <npm test / pytest / ...>
+- Full E2E command (step 8 decides when it runs): <npx playwright test / none / ...>
 

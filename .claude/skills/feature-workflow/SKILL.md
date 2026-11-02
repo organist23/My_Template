@@ -7,7 +7,7 @@ description: >-
   unresolved between them — ponytail's UI scope limit, the ponytail re-arm rule,
   the conflict rulings, and test integrity. Use when the user types
   "/feature-workflow", or when starting implementation work where what to build
-  is already clear. Use "project-workflow" instead when the work is foggy enough
+  is already clear, or for a deliberate file or docs cleanup task. Use "project-workflow" instead when the work is foggy enough
   that you cannot yet name the questions, and it will route back here per slice.
 ---
 
@@ -37,6 +37,7 @@ explicitly requested, never speculative (ladder rung 1 does not apply):
 - keyboard navigation, focus order, Escape/Enter handling
 - undo and optimistic updates where the surrounding UI already has them
 - transitions and states the design system already defines
+- the safeguards in **Safeguards by risk** below
 
 Lazy in the UI means *fewer elements and no new components* — reuse a primitive,
 reuse a token. Never fewer states or a plainer control.
@@ -48,6 +49,30 @@ Ponytail 5.3.3 already protects the *design system* ("a house component beats
 a native widget") and never cuts accessibility. What it does not cover is rung 1,
 which cannot tell a speculative abstraction from a loading state. That is the
 gap this closes.
+
+### Safeguards by risk
+
+Expected safeguards are part of the requested feature, not scope expansion.
+Match them to what the action can break:
+
+| Action | Required |
+|---|---|
+| View or navigate | nothing extra |
+| Reversible edit | validation with clear messages, loading state, success and failure feedback, double-submit guard |
+| Business-record change | the above, plus a permission check and confirmation when it affects other users |
+| Destructive or irreversible (delete, deactivate, bulk change) | the above, plus confirmation naming the item and the consequence, Cancel changes nothing, dependents checked (foreign keys, history, audit records) |
+
+- Logout ends the session server-side. Protected pages refuse access after it.
+- Harmless actions get no confirmation dialog.
+- A control with no working behavior does not ship.
+- Delete vs deactivate vs archive, retention, and reactivation are business
+  policy. If `spec.md` does not decide them, stop and ask. The answer enters
+  `spec.md` through `project-workflow` **Amend**. Never pick one yourself.
+- New modules, workflows, permissions, reports, or policies are scope
+  expansion. They need a story first.
+
+Each safeguard is an "Accepts when" or "Rejects when" condition of its story, so
+step 8 tests it.
 
 ### Ponytail re-arm
 
@@ -131,8 +156,10 @@ Where a project's own instructions name a different driver for its UI, that wins
 
 | Situation | Start at |
 |---|---|
-| Bug or small fix | step 6 re-arm (no plan to cut, re-arm only), then step 7 (`systematic-debugging` first) |
+| Bug, small fix, or small improvement that changes no story | step 6 re-arm (no plan to cut, re-arm only), then step 7 (`systematic-debugging` first for a bug). No roadmap entry |
 | Spec or plan already decided | step 5 |
+| A requirement is added, changed, removed, or conflicts, before, during, or after the build | pause. Run `project-workflow` **Amend**, then go where its table sends you. A change to the NEXT phase resumes at step 5 with the plan revised, not rewritten |
+| Cleanup of files or docs | **Cleanup** below |
 | Can't yet name the questions | stop — use `project-workflow` |
 
 ---
@@ -146,6 +173,17 @@ Plan the phase marked NEXT in `roadmap.md`, from the stories it covers in
 
 Skip `superpowers:brainstorming` if a map or spec already decided it. Keep it for
 implementation-level choices nothing has reached yet.
+
+**The plan ends with a Test scope block.** Step 6 cuts against it. Step 8
+re-checks it against the real diff and records it.
+
+```
+Feature: <phase>, US-<n>, US-<n>
+Feature tests: unit and integration for the new code, E2E for US-<n>, US-<n>
+Regression E2E: <DONE phase: US specs to rerun, reason> | none, <reason>
+System E2E: <CW specs> | none
+Full E2E run: yes, <trigger from step 8> | no
+```
 
 ## 6. Re-arm ponytail on the plan — the cut gate
 
@@ -170,16 +208,19 @@ Bug instead of a plan → `superpowers:systematic-debugging` first.
 
 ## 8. Real-world E2E — prove it against the actual system
 
-Read `e2e-testing` before running a live pass — it covers isolation, setup,
-and teardown for shared environments. If the project has no `e2e-testing`
-skill, use the project's own runner against a real process (driver table below).
+Read `.claude/skills/e2e-testing/SKILL.md` before running a live pass — it
+covers isolation, setup, and teardown for shared environments. If that file is
+missing or is still the template placeholder, use the project's own runner
+against a real process (driver table below).
 
 Unit, lint, and API tests prove the pieces. This proves the *use case*.
 
-**Where the cases come from:** the numbered user stories in `spec.md`. One
-story = one scenario, and each of its "Accepts when" and "Rejects when"
-conditions is one assertion in that scenario. The test matrix is already written; don't re-invent it at
-test time. Entered without a spec, enumerate the user-visible outcomes first.
+**Where the cases come from:** the numbered user stories **this phase covers**
+in `spec.md`. One story = one scenario, and each of its "Accepts when" and
+"Rejects when" conditions is one assertion in that scenario. The test matrix is
+already written; don't re-invent it at test time. Entered without a spec,
+enumerate the user-visible outcomes first. Stories from DONE phases run again
+only when **Regression selection** picks them.
 
 **The shape — nothing stubbed between entry and assertion:**
 
@@ -205,17 +246,76 @@ injection-ish payloads · offline or interrupted mid-flow.
 *Check the project's instruction file first* — some projects forbid one of these
 outright, and that overrides this table.
 
-**Record the pass** in `PHASE-<N>-TEST-RESULTS.md`: date, driver, pass/fail per
-story and per assertion, and anything left behind. Step 12 links it from
-`roadmap.md`.
+**Test layout.** Follow the project's existing layout if it has one, and keep
+the naming:
+
+- `tests/e2e/features/us-<n>-<slug>.*`: one spec per story, holding all of its
+  edge cases.
+- `tests/e2e/system/cw-<n>-<slug>.*`: one spec per critical workflow in
+  `spec.md`. It chains the stories and asserts the hand-offs between them, not
+  each story's edge cases again.
+- `tests/fixtures/`: captured fixtures shared by both.
+
+Regression is a selection of feature specs, not a separate suite. A scenario
+lives in one spec. Later phases rerun it and never copy it.
+
+A `claude-in-chrome` probe cannot be rerun selectively. Its findings become
+committed specs in this layout before the phase is done.
+
+**Regression selection.** Before running anything from a DONE phase:
+
+1. `git diff --name-only main...HEAD` lists the changed files.
+2. Grep the callers of what changed. Match changed files and callers against
+   each DONE phase's "Shipped as" line in `roadmap.md`.
+3. Matched phases give their US numbers, which give their feature specs. Run
+   those, plus every system spec whose workflow includes a matched story.
+4. A DONE phase that is not selected is listed in the results file with its
+   reason, for example "no shared files or tables".
+5. If the impact cannot be bounded (shared config, dynamic dispatch, rows
+   written by another module), run the full E2E suite.
+
+**Full E2E suite** (`Full E2E command` in CLAUDE.md "Project facts") runs when:
+
+- the merged phase completes a `## Part` of `roadmap.md`, or before a release
+- the diff changes a schema or migration, auth or sessions, a dependency
+  version, or a file in the "Shipped as" line of two or more phases
+- Regression selection cannot bound the impact
+
+Otherwise it does not run.
+
+**When an E2E test fails.** **REQUIRED SUB-SKILL:** `superpowers:systematic-debugging`.
+Its root-cause phases, its stop after 3 failed fixes, and its
+`condition-based-waiting.md` for timing apply here.
+
+1. Read the output, logs, browser console, and any screenshot or trace before
+   editing anything.
+2. Classify the failure: app bug, wrong test assumption, broken test script,
+   environment or config, test data or fixture, timing, external service.
+3. Rerun once, only to tell flaky from deterministic. A rerun is never the fix.
+4. Environment, external service, or isolation failure: stop and report. Do not
+   change app code for it.
+5. Changing a test's expected result requires the US condition that justifies
+   it. If the spec is ambiguous, ask. Never weaken an assertion, delete a case,
+   or loosen a wait to get green.
+6. After the fix, rerun the failed spec plus the specs Regression selection
+   picks for the files the fix touched.
+7. Root cause not established: stop and report the evidence and the hypotheses
+   already ruled out.
+
+**Record the pass** in `docs/test-results/PHASE-<N>-TEST-RESULTS.md`: date,
+driver, pass/fail per story and per assertion, the Test scope as run (regression
+specs, DONE phases skipped and why, full run yes or no), and anything left
+behind. Step 12 links it from `roadmap.md`.
 
 `superpowers` 7.0.0 has zero E2E or browser coverage; all 15 skills assume a fast
 unit runner. This step is not duplicating an existing skill.
 
 ## 9. `superpowers:verification-before-completion`
 
-Evidence before assertions. Run the test command from CLAUDE.md "Project facts"
-and every other check, read the output, then claim done.
+Evidence before assertions. Run the full `Test command` from CLAUDE.md "Project
+facts" (the fast unit and integration suite) every phase, whatever step 8
+selected, and every other check. Read the output, then claim done. E2E runs
+only as step 8 decided.
 
 ## 10. Review: complexity, then correctness, then security
 
@@ -269,6 +369,24 @@ If the merged work completes the phase marked NEXT, apply the roadmap rule in CL
 
 ---
 
+## Cleanup — a separate task, never inside a phase
+
+During steps 5–12, files unrelated to the phase stay as they are. Note them for
+a cleanup task.
+
+1. `/ponytail-audit` lists candidates. It reports and changes nothing.
+2. For each candidate, grep its references across source, tests, config, build
+   scripts, and CI. `git ls-files` and `.gitignore` separate source from
+   generated output. A file name or an apparent lack of use is not evidence.
+3. Never candidates: `spec.md`, `roadmap.md`, `CLAUDE.md`, `docs/test-results/`,
+   ADRs, config, and fixtures a spec still references.
+4. Present the list with the evidence per file. Delete or move only what the
+   user approves, in one commit. Move a file only when its location breaks a
+   stated convention.
+5. Then steps 9 and 10, as for any change.
+
+---
+
 ## Failure modes
 
 - **Ponytail on UI with no scope rule.** Rung 1 reads a loading state as
@@ -277,3 +395,7 @@ If the merged work completes the phase marked NEXT, apply the roadmap rule in CL
   Re-arm; never infer.
 - **An E2E test nobody watched fail.** Green-by-construction hides best at this level.
 - **Reaching for `/simplify` at step 10.** It applies what it finds. Read first.
+- **Rerunning every DONE phase's E2E.** Regression selection decides. Skipped
+  phases are listed with a reason.
+- **Test-fix-rerun loop.** Classify and find the root cause first. Three failed
+  fixes means stop and report.
