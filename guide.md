@@ -211,8 +211,14 @@ nothing until you approve the list.
   step 10.
 - **E2E results** go in `docs/test-results/PHASE-<N>-TEST-RESULTS.md`, and
   roadmap.md links them.
-- **Template updates:** fix gaps here in `sample_md_files` first, then re-copy into
-  projects. Edits made inside one project do not flow back.
+- **Template updates:** fix gaps here in `sample_md_files` first. Edits made
+  inside one project do not flow back.
+- **Updating an existing project:** copy only
+  `.claude/skills/project-workflow/` and `.claude/skills/feature-workflow/`.
+  Never copy `CLAUDE.md`, `roadmap.md`, or `e2e-testing/` over filled ones: merge
+  new "Project facts" lines into CLAUDE.md §3 by hand. Older root
+  `PHASE-*-TEST-RESULTS.md` files stay where they are, and new phases write to
+  `docs/test-results/`. Check that `.gitignore` does not ignore it.
 
 ---
 

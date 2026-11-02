@@ -40,7 +40,7 @@ Covers US-<N>.
 
 ### Phase 3 — <Name> LATER
 
-Reopens Phase <N>: US-<n> changed on <date>.
+Reopens Phase <N>: <US-n changed, or what changes> on <date>. (Or `Supersedes Phase <N> convention: <old> → <new>, <reason>`, or `Reverts Phase <N> (<revert hash>)`. See project-workflow Amend.)
 Covers US-<N>.
 
 - <One outcome>

@@ -70,6 +70,9 @@ Match them to what the action can break:
   `spec.md` through `project-workflow` **Amend**. Never pick one yourself.
 - New modules, workflows, permissions, reports, or policies are scope
   expansion. They need a story first.
+- A shipped feature missing one of these safeguards: report it and propose it
+  through `project-workflow` **Amend**, since it changes the story. Do not add it
+  inside an unrelated phase.
 
 Each safeguard is an "Accepts when" or "Rejects when" condition of its story, so
 step 8 tests it.
@@ -156,11 +159,13 @@ Where a project's own instructions name a different driver for its UI, that wins
 
 | Situation | Start at |
 |---|---|
-| Bug, small fix, or small improvement that changes no story | step 6 re-arm (no plan to cut, re-arm only), then step 7 (`systematic-debugging` first for a bug). No roadmap entry |
+| Bug, small fix, or small improvement that changes no story, schema, API, or business rule, and is not a redesign (a new layout or flow for a page or module) | step 6 re-arm (no plan to cut, re-arm only), then step 7 (`systematic-debugging` first for a bug). No roadmap entry |
+| A requirement is added, changed, removed, or conflicts, or a redesign, schema, API, or business-rule change, before, during, or after the build | pause. Run `project-workflow` **Amend**, then go where its table sends you. A change to the NEXT phase resumes at step 5 with the plan revised, not rewritten |
 | Spec or plan already decided | step 5 |
-| A requirement is added, changed, removed, or conflicts, before, during, or after the build | pause. Run `project-workflow` **Amend**, then go where its table sends you. A change to the NEXT phase resumes at step 5 with the plan revised, not rewritten |
 | Cleanup of files or docs | **Cleanup** below |
 | Can't yet name the questions | stop — use `project-workflow` |
+
+The first matching row wins.
 
 ---
 
@@ -211,7 +216,7 @@ Bug instead of a plan → `superpowers:systematic-debugging` first.
 Read `.claude/skills/e2e-testing/SKILL.md` before running a live pass — it
 covers isolation, setup, and teardown for shared environments. If that file is
 missing or is still the template placeholder, use the project's own runner
-against a real process (driver table below).
+against a real process (driver table below), never against production data.
 
 Unit, lint, and API tests prove the pieces. This proves the *use case*.
 
@@ -264,11 +269,17 @@ committed specs in this layout before the phase is done.
 
 **Regression selection.** Before running anything from a DONE phase:
 
-1. `git diff --name-only main...HEAD` lists the changed files.
-2. Grep the callers of what changed. Match changed files and callers against
-   each DONE phase's "Shipped as" line in `roadmap.md`.
+1. `git diff --name-only <base>...HEAD` lists the changed files, where `<base>`
+   is the branch the phase started from (usually `main`). The hunk headers of
+   `git diff -U0 <base>...HEAD` name the changed functions.
+2. Grep the callers of what changed. Match the changed files, their directories,
+   and the changed function, component, and table names against each DONE
+   phase's "Shipped as" entries in `roadmap.md`. When an entry names functions
+   or components, match those names, not the whole file. A schema change matches
+   every phase whose entries name the changed table.
 3. Matched phases give their US numbers, which give their feature specs. Run
-   those, plus every system spec whose workflow includes a matched story.
+   those, plus every system spec whose workflow includes a matched story, plus
+   every spec that uses a test helper or selector bound to changed UI.
 4. A DONE phase that is not selected is listed in the results file with its
    reason, for example "no shared files or tables".
 5. If the impact cannot be bounded (shared config, dynamic dispatch, rows
@@ -278,7 +289,8 @@ committed specs in this layout before the phase is done.
 
 - the merged phase completes a `## Part` of `roadmap.md`, or before a release
 - the diff changes a schema or migration, auth or sessions, a dependency
-  version, or a file in the "Shipped as" line of two or more phases
+  version, or a function, component, or table named in the "Shipped as" of two
+  or more phases
 - Regression selection cannot bound the impact
 
 Otherwise it does not run.
@@ -305,7 +317,9 @@ Its root-cause phases, its stop after 3 failed fixes, and its
 **Record the pass** in `docs/test-results/PHASE-<N>-TEST-RESULTS.md`: date,
 driver, pass/fail per story and per assertion, the Test scope as run (regression
 specs, DONE phases skipped and why, full run yes or no), and anything left
-behind. Step 12 links it from `roadmap.md`.
+behind. Step 12 links it from `roadmap.md`. `git check-ignore docs/test-results/`
+must print nothing. Playwright's default `test-results` ignore entry also matches
+it, so anchor that entry as `/test-results/`.
 
 `superpowers` 7.0.0 has zero E2E or browser coverage; all 15 skills assume a fast
 unit runner. This step is not duplicating an existing skill.
