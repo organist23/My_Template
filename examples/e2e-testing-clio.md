@@ -137,7 +137,7 @@ prefix. Stop and report it. Do not change the client or the number format yourse
   spike). Re-read each matter first and delete it only if its description starts
   with your prefix. `backfill:purge` removes tasks, not matters.
 - Delete `convex/spike.js`, re-push, then delete the Convex project.
-- Record the pass in `PHASE-<N>-TEST-RESULTS.md`, including anything left behind.
+- Record the pass in `docs/test-results/PHASE-<N>-TEST-RESULTS.md`, including anything left behind.
 
 ## Common mistakes
 
