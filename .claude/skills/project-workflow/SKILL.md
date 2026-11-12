@@ -233,22 +233,37 @@ story can change another). Apply each row that matches.
 | Requirement removed or replaced | `Withdrawn` line, number kept, removed from `## Critical workflows` | remove it from LATER phases. Already shipped: a new phase `Reopens Phase <N>: US-<n> withdrawn`, done when the behavior is gone and the stories it touched still pass | the phase that removes the behavior deletes the tests of that behavior only. A test filed under the withdrawn story that covers behavior still shipped moves to the story that owns it. Its stored data, including records still in progress, stays unless the user decides otherwise |
 | Undo a past decision | edit the story, `Changed` line naming the date of the behavior it restores. A technical decision with no story: no edit | a new phase. A technical decision or a recorded user decision gets the line `Supersedes Phase <N> convention: <old> → <new>, <reason>` (or `decision`) | a forward change, built as a phase. To `git revert` instead, see **Reverting a phase** below |
 | UI or flow redesign | conditions unchanged: no edit. Conditions changed: as for a changed story | a new phase, `Reopens Phase <N>: <what changes>` | its E2E specs are updated without weakening any assertion |
-| Schema, API, or business-rule change | as above for each affected story. No story text changes: no edit | always a new phase, even when no story text changes | the Test scope must include Regression selection (`feature-workflow` step 8) |
+| Schema, API, or business-rule change | as above for each affected story. No story text changes: no edit | a new phase, even when no story text changes. Exception: every affected story is in the NEXT phase and none is in a DONE phase, then revise NEXT as for a changed NEXT story and put any `Supersedes` line in it | the Test scope must include Regression selection (`feature-workflow` step 8) |
 | Schema change with existing data | as above | as above | the plan includes the migration, how existing values map to the new columns (the user approves the mapping), a backup, a way to reverse it that touches only rows the migration changed, and every reader of the old columns (code, APIs, reports, exports, and installed clients still running older builds). The dry run reports each case of the mapping with real examples, so the user approves the mapping on the data, not on a count. The migration and its reverse run first on a test copy the user provides (an export or backup restored into a throwaway deployment). The schema changes in two deploys: first add the new fields as optional and migrate, then remove the old field in a later phase, because the deployed schema must accept every existing row. The plan states the production order (deploy, dry run, run) for the user to carry out. If a push deploys automatically, the user decides when the change is merged. Never run it against production data yourself. Any loss of existing data needs the user's decision |
 
 **Reverting a phase.** Only when the user asks, and after the change note is approved (Amend step 3):
 
-1. `git diff --name-only <merge> main` (or the branch that holds the merge) lists only `spec.md`, `roadmap.md`, and
+`<default>` below is the repo's default branch (`main` or `master`).
+
+1. `git diff --name-only <merge> <default>` (or the branch that holds the merge) lists only `spec.md`, `roadmap.md`, and
    results files (`docs/test-results/`, or older root `PHASE-*-TEST-RESULTS.md`).
    Anything else means later work sits on it: build a forward change instead.
+   Then check the NEXT and every Paused branch (`git diff <default>...<branch>`).
+   A hit is code on the branch that uses a name or table from the phase's
+   "Shipped as", or a file the merge added that the branch changes. Generated
+   files never count. A shared file such as the schema counts only when the
+   branch changes the same table or function the merge changed. Also list LATER
+   phases whose stories depend on the reverted ones. Any hit: the user
+   re-slices them first.
 2. If the phase changed the schema and its migration ran anywhere, run the
    reverse migration there first. The old schema rejects migrated rows, so the
    revert cannot deploy until then.
 3. `git revert -m 1 <merge>`. For a squash or rebase merge, revert the phase's
    commits.
-4. The revert deletes files the merge added. Restore the results file:
-   `git checkout <merge> -- docs/test-results/PHASE-<N>-TEST-RESULTS.md`.
-5. Run it as its own phase through steps 8–12, with the line
+4. The revert deletes files the merge added. Restore the results file, and every
+   E2E spec (feature or system) that also covers a story still shipped, then
+   commit them:
+   `git checkout <merge> -- docs/test-results/PHASE-<N>-TEST-RESULTS.md <specs>`.
+   A restored system spec whose workflow includes a reverted story drops that
+   hand-off, and `## Critical workflows` in `spec.md` changes the same way. If
+   fewer than two stories remain, delete that system spec and its CW line.
+5. Run it as its own phase through steps 8–12, a new roadmap entry with the next
+   unused phase number and the line
    `Reverts Phase <N> (<revert hash>)` written after the revert commit. Its Test
    scope covers the remaining stories the reverted phase touched. Done when the
    reverted behavior is gone and those stories pass.
@@ -257,6 +272,9 @@ story can change another). Apply each row that matches.
 
 **2. Impact.** Read `spec.md`, `roadmap.md`, the code and callers in the
 affected files, their tests, the latest `docs/test-results/`, and the schema.
+Read the NEXT and every Paused branch too (`git diff <default>...<branch>`), since
+unmerged code can bypass the change. List every reader and every writer of the
+changed fields or rules, on the default branch and on those branches.
 List the affected stories, the phases that shipped them (the "Shipped as" lines
 in `roadmap.md`), the modules, tables, APIs, existing data, and their E2E specs
 (feature and critical workflow). Show the user this list, the classification,
@@ -269,7 +287,11 @@ change. A clarification that edits nothing is the only exception.
 it waits in the roadmap. One phase at a time still holds: a reopen phase waits as LATER unless the user moves it to
 NEXT. To build it ahead of an unfinished NEXT phase, the unfinished phase goes
 back to LATER with the line `Paused <date>: <reason>`, keeps its branch, and
-becomes NEXT again when the new phase is DONE. If no phase is NEXT, the new phase becomes NEXT. When one Amend creates
+becomes NEXT again when the new phase is DONE. On resume, rebase its branch on
+the default branch. Resolve conflicts in source files and regenerate codegen
+(for example `npx convex codegen`), never hand-merge it. Then rerun
+`feature-workflow` step 5 against what merged meanwhile. Its Test scope adds the
+feature and system specs of those phases. If no phase is NEXT, the new phase becomes NEXT. When one Amend creates
 several phases, the user sets their order and only the first becomes NEXT. New
 phases go under a new `## Part` heading when they don't serve an unfinished
 Part's goal, and always when every phase is DONE. Finishing that Part triggers a

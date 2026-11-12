@@ -105,6 +105,7 @@ Fixed rulings. Do not re-decide these per task:
 | ponytail's "one runnable check, no frameworks" vs `superpowers:test-driven-development` | **TDD wins.** |
 | ponytail rung 1 vs UI surface | **UI wins.** See ponytail scope above. |
 | An implementer's "left it per YAGNI" vs a reviewer's finding | **The reviewer wins.** `subagent-driven-development/task-reviewer-prompt.md` is explicit: a stated rationale never downgrades a finding's severity. Ponytail licenses building less, not defending after the fact. |
+| ponytail's "no new deps" vs a project with no test runner or E2E driver | **TDD wins.** The first phase that needs them installs them as its first task. Step 6 does not cut them. Until then, CLAUDE.md "Test command" reads `none yet, added in Phase <N>` |
 | A `mattpocock-skills` skill vs the skill a step names | **The named skill wins.** That plugin (1.3.1) is installed for `wayfinder`, `to-spec`, and `to-tickets` only — all three explicit-invoke. But 11 of its skills auto-invoke, and 9 overlap steps here: `codebase-design`, `domain-modeling`, `research`, `prototype`, `grilling` (step 5), `tdd`, `diagnosing-bugs` (step 7), `code-review` (step 10), `pr` (step 11). Use what the step names, not what fires. |
 
 ### Test integrity
@@ -152,6 +153,17 @@ browser, then continue when they say it is done.
 Testing the login flow *itself* is the one case that needs credentials in the
 browser. Use a throwaway test account whose credentials the user supplies for
 that purpose — never a real one — and still ask before the first attempt.
+
+**Committed specs authenticate without Claude logging in.** Use one of these,
+set up by the user: a saved session state per test role that the user creates
+once by logging in (git-ignored, never committed), or the auth provider's
+test mode for throwaway test users (for example Clerk test emails with its
+fixed code), on a development instance only. The test email and fixed code may
+be committed. A secret the mechanism needs comes from a git-ignored env file
+the user fills, read by the runner, never typed by Claude. This is not typing
+credentials from a config file. Never store real credentials. A driver
+with no session or token mechanism (often native), or no test mode: the spec
+is marked semi-manual in the results file and the user logs in per run.
 
 Where a project's own instructions name a different driver for its UI, that wins.
 
@@ -251,6 +263,7 @@ injection-ish payloads · offline or interrupted mid-flow.
 |---|---|
 | Web app in a real browser session | `claude-in-chrome` |
 | Desktop / Electron app | Playwright over CDP |
+| Native mobile app (Expo, React Native) | Maestro or Detox on an emulator with a dev build. A web build does not prove native behavior (secure storage, deep links, native dialogs). With a web target too: this row for native behavior, the web row only for web-only stories |
 | HTTP service, CLI, worker | the project's own runner against a real process |
 
 *Check the project's instruction file first* — some projects forbid one of these
@@ -278,29 +291,36 @@ committed specs in this layout before the phase is done.
 **Regression selection.** Before running anything from a DONE phase:
 
 1. `git diff --name-only <base>...HEAD` lists the changed files, where `<base>`
-   is the branch the phase started from (usually `main`). The hunk headers of
-   `git diff -U0 <base>...HEAD` name the changed functions.
+   is the branch the phase started from. The hunk headers of
+   `git diff -U0 <base>...HEAD` name the function above each hunk, so for added
+   lines read the hunk to name their function. In a new file every
+   export counts as changed. Ignore headers that name only an import line.
+   Skip generated files (codegen) and walk from the source they come from.
 2. Grep the callers of what changed, and their callers, until you reach a name
-   a "Shipped as" entry lists. Match the changed files and every changed or
+   a "Shipped as" entry lists. Grep the call form (qualified name such as
+   `api.users.store`, route path, or string key), not the bare name. A
+   file-routed screen has no importers, so its file is the match. Match the changed files and every changed or
    calling function, component, and table name against each DONE phase's
    "Shipped as" entries in `roadmap.md`. When an entry names functions or
    components, match those names, not the whole file. A directory entry matches
    only through the names it lists. A schema change matches every phase whose
-   entries name the changed table.
+   `Tables:` lists the changed table.
 3. Matched phases give their US numbers, which give their feature specs. Run
    those, plus every system spec whose workflow includes a matched story, plus
    every spec that uses a test helper or selector bound to changed UI.
 4. A DONE phase that is not selected is listed in the results file with its
    reason, for example "no shared files or tables".
-5. If the impact cannot be bounded (shared config, dynamic dispatch, rows
-   written by another module), run the full E2E suite.
+5. If the impact cannot be bounded (shared config, dynamic dispatch, a write
+   whose readers grep cannot find), run the full E2E suite.
 
 **Full E2E suite** (`Full E2E command` in CLAUDE.md "Project facts") runs when:
 
 - the merged phase completes a `## Part` of `roadmap.md`, or before a release
-- the diff changes a schema or migration, auth or sessions, a dependency
-  version, a business rule, or a function, component, or table named (directly
-  or through its callers) in the "Shipped as" of two or more phases
+- the diff changes a schema or migration, the auth provider, session handling,
+  or a permission rule (not every function that reads the current user), a dependency
+  version, a business rule, or a function or component named (directly
+  or through its callers) in the "Shipped as" of two or more phases. A name a
+  later phase re-ships counts as one phase here
 - Regression selection cannot bound the impact
 
 Otherwise it does not run.

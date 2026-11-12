@@ -57,12 +57,13 @@ Accept the folder trust prompt, then install:
 
 Restart Claude Code. Type `/` and confirm `/ponytail-review` appears.
 
-Other tools, installed by you:
+Other tools:
 
 | Tool | Used in | How |
 |---|---|---|
 | Claude in Chrome extension | step 8, web apps | Chrome Web Store |
 | Playwright | step 8, desktop / Electron apps only | per project, `npm i -D playwright` |
+| Maestro or Detox | step 8, native mobile apps | installed by the first phase that needs it. You provide the emulator |
 | git | steps 11–12 | merge hash goes into roadmap.md |
 
 ### Step 2. Copy the template into a project

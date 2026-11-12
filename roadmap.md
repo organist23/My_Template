@@ -12,7 +12,7 @@ Covers US-<N>, US-<N>.
 
 **Done when:** <checkable condition>. — **Verified** on <date> with <driver from `feature-workflow` step 8>, <what was checked>. Results: `docs/test-results/PHASE-<N>-TEST-RESULTS.md`. Regression: <US specs re-run | none, reason>.
 
-Shipped as `<file>`: <functions>.
+Shipped as `<file>`: <functions>. Tables: <tables it writes, or none>.
 
 Deliberately not built, and why: <thing>, because <later phase owns it>.
 
