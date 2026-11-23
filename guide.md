@@ -35,8 +35,8 @@ The workflow calls plugins it does not include. Without them, steps fail silentl
 
 | Plugin | Source | Tested with | Used in |
 |---|---|---|---|
-| `superpowers` | Anthropic official marketplace | 7.0.0 | steps 5, 7, 9, 11 |
-| `ponytail` | community, `dietrichgebert/ponytail` | 5.3.3 | steps 6, 10 |
+| `superpowers` | Anthropic official marketplace | 7.0.0 | steps 5, 7–11 |
+| `ponytail` | community, `dietrichgebert/ponytail` | 5.3.3 | steps 6, 10, Cleanup |
 | `mattpocock-skills` | Anthropic official marketplace | 1.3.1 | optional: `wayfinder`, `to-spec`, `to-tickets`. They need `/setup-matt-pocock-skills` and an issue tracker, and publish there instead of `spec.md` and `roadmap.md`. Do not mix them with project-workflow in one project |
 
 The skills quote these versions. After a plugin update, re-check `feature-workflow`'s
@@ -61,8 +61,9 @@ Other tools:
 
 | Tool | Used in | How |
 |---|---|---|
-| Claude in Chrome extension | step 8, web apps | Chrome Web Store |
-| Playwright | step 8, desktop / Electron apps only | per project, `npm i -D playwright` |
+| Claude in Chrome extension | step 8, exploring and the visual pass | Chrome Web Store |
+| Playwright | step 8, web and desktop / Electron specs | per project, `npm i -D playwright`, installed by the first phase that needs it |
+| `ui-ux-pro-max` skill | steps 1, 2, 5, 7, 8, 10 for UI work | user skill in `~/.claude/skills/`, needs Python 3 |
 | Maestro or Detox | step 8, native mobile apps | installed by the first phase that needs it. You provide the emulator |
 | git | steps 11–12 | merge hash goes into roadmap.md |
 
@@ -87,7 +88,8 @@ Open Claude Code in the project and accept the trust prompt. Type `/` and confir
 Section 3 of CLAUDE.md has placeholders that `feature-workflow` reads: trust
 boundaries for step 10, the UI test driver for step 8, the fast test command
 (every phase), and the full E2E command (only when step 8 triggers it).
-Fill them in, or let Claude do it:
+A new project with no code skips this: project-workflow step 4 fills them from
+the spec. For an existing codebase, fill them in, or let Claude do it:
 
 ```
 Read CLAUDE.md and .claude/skills/feature-workflow/SKILL.md. Inspect this codebase,
@@ -107,8 +109,10 @@ disable-model-invocation and write a description that says when to use it. Use t
 isolation from live, setup, prove isolation before creating data, during the pass,
 teardown, common mistakes. Keep its safety patterns: a pinned test target that
 refuses to run when unset or pointing at production, reads-only against
-production, teardown that deletes everything the pass created. Ask me about our
-environments, shared accounts, and test data before writing.
+production, teardown that deletes everything the pass created. Look up what the
+repo already shows (test target, env var names, existing runner) yourself, then
+grill me in rounds (project-workflow step 1 format) about our environments,
+shared accounts, and test data before writing.
 ```
 
 If the project has no live system yet, skip this step and tell Claude in step 8:
@@ -130,13 +134,13 @@ What happens, and what you do:
 
 | Step | Claude does | You do |
 |---|---|---|
-| 1. Understand | asks questions in groups | answer, then confirm the one-sentence goal |
-| 2. Spec | writes numbered user stories (US-1, US-2…) with "Accepts when" and "Rejects when" | check every story is testable, answer open questions |
+| 1. Understand | grills you in rounds: numbered ❓ questions, each with a ➡️ recommended answer. For UI, shows a `ui-ux-pro-max` design preview | answer by number ("1 yes, 2 no, because…"), push back, approve the design, then confirm the one-sentence goal |
+| 2. Spec | writes numbered user stories (US-1, US-2…) with "Accepts when" and "Rejects when" from your answers, no new questions. Saves the design to `design-system/<slug>/MASTER.md` | check every story is testable |
 | 3. Slice | fills roadmap.md, one phase NEXT, rest LATER | check the order and that Phase 0 is small |
-| 4. Route | hands Phase 0 to feature-workflow | confirm |
+| 4. Route | fills CLAUDE.md "Project facts", hands Phase 0 to feature-workflow | confirm |
 
 Already have a spec? Paste or point to it. Claude checks it against step 2's rules
-before slicing:
+and grills you on any gaps before slicing:
 
 ```
 /project-workflow Here is my spec: spec.md. Check it, then slice it into roadmap.md.
@@ -152,12 +156,12 @@ Start each phase in a fresh session:
 
 | Step | What happens | Your prompt if it stalls |
 |---|---|---|
-| 5. Plan | writes the implementation plan | `Write the plan for the NEXT phase.` |
+| 5. Plan | writes the implementation plan. Lists your login-setup task if specs need one | `Write the plan for the NEXT phase.` |
 | 6. Cut gate | re-arms ponytail, cuts speculative plan steps | `Invoke ponytail:ponytail and cut the plan.` |
 | 7. Code + TDD | tests first, then code | `Execute the plan with TDD.` |
-| 8. E2E | this phase's stories, plus DONE-phase specs only if regression selection picks them. Full suite only on a trigger | `Run step 8. Show the Test scope first.` |
+| 8. E2E | this phase's stories, plus DONE-phase specs only if regression selection picks them. Full suite only on a trigger. Visual pass on changed screens and printed forms | `Run step 8. Show the Test scope first.` |
 | 9. Verify | runs every command, reads output | `Verify before claiming done.` |
-| 10. Review | complexity, then correctness, then security if gated | `/ponytail-review`, then `/code-review`, then `/security-review` |
+| 10. Review | complexity, correctness, UI if the diff touches UI, then security if gated | `/ponytail-review`, then `/code-review`, then the UI review pass, then `/security-review` |
 | 11. Merge | merge, rebase, or abandon | `Finish the branch.` |
 | 12. Roadmap | marks phase DONE, promotes next phase to NEXT | `Apply the roadmap rule in CLAUDE.md.` |
 
@@ -169,8 +173,10 @@ Then start a new session and repeat Stage B for the next NEXT phase.
 /feature-workflow Bug: <what happens, what should happen, how to reproduce>.
 ```
 
-Claude re-arms ponytail (step 6), debugs first, then fixes with TDD (step 7) and
-continues through review.
+Claude branches, re-arms ponytail (step 6), debugs first, then fixes with TDD
+(step 7) and continues through merge. The Test scope and the step 8 pass go in
+one file, `docs/test-results/FIX-<date>-<slug>.md`. If the fix changes a story's
+condition instead of restoring it, it becomes an Amend.
 
 ### Stage D. Long session or after /compact
 
@@ -189,8 +195,9 @@ hours. The `[PONYTAIL]` badge does not prove the rules are still in context.
 
 This also works after the whole system is DONE. Claude classifies the change,
 shows you a change note, waits for your OK, then edits only the affected stories
-and phases and returns to feature-workflow step 5. Completed phases stay as
-they are. A change to one gets a new "Reopens Phase N" phase.
+and phases. It returns to feature-workflow step 5 if the affected phase is NEXT,
+otherwise the new phase waits as LATER. Completed phases stay as they are. A new
+phase carries a "Reopens", "Supersedes", or "Reverts" line.
 
 ### Stage F. Cleanup
 

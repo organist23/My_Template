@@ -37,7 +37,7 @@ In addition to clearly communicating, it's important that we clearly communicate
 - Do not speculate on abstractions for future requirements.
 - Do not claim completion without evidence.
 - Never add a co-author to a commit message.
-- After merging a phase (`feature-workflow` step 12), update roadmap.md: mark it DONE with merge hash and date, add Verified and Shipped as, add Picked up from and Conventions later phases inherit when they apply, promote the next phase to NEXT. Edit no other phase.
+- After merging a phase (`feature-workflow` step 12), update roadmap.md: mark it DONE with merge hash and date, add Verified and Shipped as, add Picked up from and Conventions later phases inherit when they apply, promote the next phase to NEXT (a Paused phase first, removing its Paused line). Edit no other phase.
 - For completed work, concisely restate it but do not overload with response detail.
 
 ## 3. Project facts
@@ -45,7 +45,7 @@ In addition to clearly communicating, it's important that we clearly communicate
 Fill in per project. `feature-workflow` reads these.
 
 - Trust boundaries (step 10 runs `/security-review` when a diff touches these): <auth, payments, file upload, ...>
-- UI test driver (step 8, only if not `claude-in-chrome`): <Playwright / Cypress / none>
+- UI test driver (step 8 committed specs): <Playwright / Maestro / none yet, added in Phase N>
 - Test command (fast unit and integration suite, runs every phase): <npm test / pytest / ...>
 - Full E2E command (step 8 decides when it runs): <npx playwright test / none / ...>
 

@@ -38,9 +38,13 @@ explicitly requested, never speculative (ladder rung 1 does not apply):
 - undo and optimistic updates where the surrounding UI already has them
 - transitions and states the design system already defines
 - the safeguards in **Safeguards by risk** below
+- visual quality: layout, spacing, hierarchy, typography, color, responsive
+  behavior at each screen width, and everything `design-system/<slug>/MASTER.md`
+  (or its page override) defines
 
-Lazy in the UI means *fewer elements and no new components* — reuse a primitive,
-reuse a token. Never fewer states or a plainer control.
+Lazy in the UI means *no elements beyond the design and no new components* —
+reuse a primitive, reuse a token. Never fewer states, a plainer control, or a
+looser match to MASTER.md.
 
 Trade UI away for performance only with a measurement showing the current
 version is too slow. "It'd be simpler" is not that measurement.
@@ -66,7 +70,8 @@ Match them to what the action can break:
 - Harmless actions get no confirmation dialog.
 - A control with no working behavior does not ship.
 - Delete vs deactivate vs archive, retention, and reactivation are business
-  policy. If `spec.md` does not decide them, stop and ask. The answer enters
+  policy. If `spec.md` does not decide them, stop and put them to the user as a
+  grilling round (`project-workflow` step 1 format). The answer enters
   `spec.md` through `project-workflow` **Amend**. Never pick one yourself.
 - New modules, workflows, permissions, reports, or policies are scope
   expansion. They need a story first.
@@ -106,7 +111,7 @@ Fixed rulings. Do not re-decide these per task:
 | ponytail rung 1 vs UI surface | **UI wins.** See ponytail scope above. |
 | An implementer's "left it per YAGNI" vs a reviewer's finding | **The reviewer wins.** `subagent-driven-development/task-reviewer-prompt.md` is explicit: a stated rationale never downgrades a finding's severity. Ponytail licenses building less, not defending after the fact. |
 | ponytail's "no new deps" vs a project with no test runner or E2E driver | **TDD wins.** The first phase that needs them installs them as its first task. Step 6 does not cut them. Until then, CLAUDE.md "Test command" reads `none yet, added in Phase <N>` |
-| A `mattpocock-skills` skill vs the skill a step names | **The named skill wins.** That plugin (1.3.1) is installed for `wayfinder`, `to-spec`, and `to-tickets` only — all three explicit-invoke. But 11 of its skills auto-invoke, and 9 overlap steps here: `codebase-design`, `domain-modeling`, `research`, `prototype`, `grilling` (step 5), `tdd`, `diagnosing-bugs` (step 7), `code-review` (step 10), `pr` (step 11). Use what the step names, not what fires. |
+| A `mattpocock-skills` skill vs the skill a step names | **The named skill wins.** That plugin (1.3.1) is installed for `wayfinder`, `to-spec`, and `to-tickets` only — all three explicit-invoke. But 11 of its skills auto-invoke, and 9 overlap steps here: `codebase-design`, `domain-modeling`, `research`, `prototype`, `grilling` (step 5, and every grilling round in `project-workflow` step 1, Amend, and step 8 rule 5, which use the inline step 1 method), `tdd`, `diagnosing-bugs` (step 7), `code-review` (step 10), `pr` (step 11). Use what the step names, not what fires. |
 
 ### Test integrity
 
@@ -174,9 +179,9 @@ Where a project's own instructions name a different driver for its UI, that wins
 | Situation | Start at |
 |---|---|
 | Cleanup of files or docs | **Cleanup** below |
-| Bug, small fix, or small improvement that changes no story, schema, API, or business rule, and is not a redesign (a new layout or flow for a page or module) | step 6 re-arm (no plan to cut, re-arm only), then step 7 (`systematic-debugging` first for a bug). No roadmap entry. Write the step 5 Test scope block before step 7, and record step 8 in `docs/test-results/FIX-<date>-<slug>.md` |
+| Bug, small fix, or small improvement that changes no story, schema, API, or business rule, and is not a redesign (a new layout or flow for a page or module) | a branch from the default branch, step 6 re-arm (no plan to cut, re-arm only), then steps 7–11 (`systematic-debugging` first for a bug). No roadmap entry. Before step 7, write the step 5 Test scope block once, at the top of `docs/test-results/FIX-<date>-<slug>.md`, where step 8 records the pass. Code that breaks an existing "Accepts when" or "Rejects when" condition is a fix. A change to the condition itself is Amend |
 | A requirement is added, changed, removed, or conflicts, or a redesign, schema, API, or business-rule change, before, during, or after the build | pause. Run `project-workflow` **Amend**, then go where its table sends you. A change to the NEXT phase resumes at step 5 with the plan revised, not rewritten |
-| Spec or plan already decided | step 5 |
+| Spec or plan already decided | step 5. A feature with no roadmap phase gets one first (`project-workflow` step 3), so it has a phase number and a "Shipped as" line |
 | Can't yet name the questions | stop — use `project-workflow` |
 
 The first matching row wins.
@@ -192,6 +197,15 @@ Plan the phase marked NEXT in `roadmap.md`, from the stories it covers in
 
 Skip `superpowers:brainstorming` if a map or spec already decided it. Keep it for
 implementation-level choices nothing has reached yet.
+
+A phase from an Amend starts with the approved change note as its header.
+
+A phase with UI reads `design-system/<slug>/MASTER.md` and the page override,
+and runs `ui-ux-pro-max` with `--stack <stack>` for implementation rules. The
+plan names the tokens and components each screen uses.
+
+A phase whose E2E specs need a login lists the user's setup task before step 8:
+one saved session or test-mode user per role (see **Browser automation**).
 
 **The plan ends with a Test scope block.** Step 6 cuts against it. Step 8
 re-checks it against the real diff and records it.
@@ -224,6 +238,9 @@ Ponytail stays on as a mode — its minimalism and TDD's "simplest code to pass"
 agree, and where they don't, see **Resolved conflicts**.
 
 Bug instead of a plan → `superpowers:systematic-debugging` first.
+
+UI code uses MASTER.md tokens and follows `ui-ux-pro-max` rules, searched one
+concern at a time with `--domain ux`. No raw hex or ad hoc spacing in components.
 
 ## 8. Real-world E2E — prove it against the actual system
 
@@ -261,7 +278,7 @@ injection-ish payloads · offline or interrupted mid-flow.
 
 | Target | Driver |
 |---|---|
-| Web app in a real browser session | `claude-in-chrome` |
+| Web app | Playwright specs. `claude-in-chrome` only to explore before writing a spec and for the visual pass |
 | Desktop / Electron app | Playwright over CDP |
 | Native mobile app (Expo, React Native) | Maestro or Detox on an emulator with a dev build. A web build does not prove native behavior (secure storage, deep links, native dialogs). With a web target too: this row for native behavior, the web row only for web-only stories |
 | HTTP service, CLI, worker | the project's own runner against a real process |
@@ -285,8 +302,20 @@ In a project with one spec file per app, a story is a `describe` block named
 Regression is a selection of feature specs, not a separate suite. A scenario
 lives in one spec. Later phases rerun it and never copy it.
 
-A `claude-in-chrome` probe cannot be rerun selectively. Its findings become
-committed specs in this layout before the phase is done.
+A story's behavior runs once, through its committed spec. Write the spec in this
+layout and run it with the project's runner. A `claude-in-chrome` probe cannot
+be rerun selectively, so use it only to explore before writing the spec, for a
+semi-manual login, or for the visual pass. Never use it as a second behavior
+pass over a story a spec covers.
+
+The phase that ships a critical workflow's last story writes its system spec.
+
+**Visual pass** (phases that change UI). Screenshot each changed screen at each
+width in the spec's Design references, in a real browser. Check it against
+MASTER.md (or the page override) and the Pre-Delivery Checklist in
+`ui-ux-pro-max`'s `references/pro-rules.md`. A printed output is exported to PDF
+and compared with its reference file. Findings are fixed in this phase. The
+results file lists the screens checked and links the screenshots.
 
 **Regression selection.** Before running anything from a DONE phase:
 
@@ -337,17 +366,22 @@ Its root-cause phases, its stop after 3 failed fixes, and its
 4. Environment, external service, or isolation failure: stop and report. Do not
    change app code for it.
 5. Changing a test's expected result requires the US condition that justifies
-   it. If the spec is ambiguous, ask. Never weaken an assertion, delete a case,
+   it. If the spec is ambiguous, ask a grilling round (`project-workflow` step 1
+   format: numbered ❓ question, ➡️ recommended answer, facts looked up by you,
+   only dependent questions wait).
+   An answer that changes a story goes through Amend. Never weaken an assertion, delete a case,
    or loosen a wait to get green.
 6. After the fix, rerun the failed spec plus the specs Regression selection
    picks for the files the fix touched.
 7. Root cause not established: stop and report the evidence and the hypotheses
    already ruled out.
 
-**Record the pass** in `docs/test-results/PHASE-<N>-TEST-RESULTS.md`: date,
-driver, pass/fail per story and per assertion, the Test scope as run (regression
-specs, DONE phases skipped and why, full run yes or no), and anything left
-behind. Step 12 links it from `roadmap.md`. `git check-ignore docs/test-results/`
+**Record the pass** in `docs/test-results/PHASE-<N>-TEST-RESULTS.md`, once:
+date, driver, the runner's summary pasted as output (not pass/fail retyped per
+assertion), the Test scope as "as planned" or only what differed from the step 5
+block, DONE phases skipped and why, and by hand only failures, their root cause,
+and anything left behind. Step 12 links it from `roadmap.md` and does not copy
+it. `git check-ignore docs/test-results/`
 must print nothing. Playwright's default `test-results` ignore entry also matches
 it, so anchor that entry as `/test-results/`.
 
@@ -399,6 +433,12 @@ complexity hunt as `/ponytail-review` but applies its fixes in the same pass,
 landing changes in the tree before you have read them. Report-then-decide is the
 point. Same reason `/code-review` runs without `--fix`.
 
+**UI review pass** when the diff touches UI: after `/code-review`, check the
+changed screens against the `ui-ux-pro-max` priority table (accessibility,
+touch, layout, typography and color, forms, navigation) and MASTER.md. It
+reports only. A `/ponytail-review` finding that removes a UI state or a design
+element is rejected under **Ponytail scope**.
+
 Pair with `superpowers:receiving-code-review` when acting on findings — it holds
 the YAGNI-defense procedure (grep for real usage before implementing a
 reviewer's suggestion).
@@ -410,6 +450,10 @@ Merge, rebase, or abandon — decided once.
 ## 12. Roadmap
 
 If the merged work completes the phase marked NEXT, apply the roadmap rule in CLAUDE.md. Otherwise skip.
+The merge hash exists only after the merge, so commit the roadmap edit directly
+on the default branch as `roadmap: Phase <N> DONE`. If a test deployment now
+exists and `.claude/skills/e2e-testing/SKILL.md` is still the placeholder, tell
+the user to replace it (guide.md Part 1, Step 4).
 
 ---
 
@@ -422,13 +466,15 @@ a cleanup task.
 2. For each candidate, grep its references across source, tests, config, build
    scripts, and CI. `git ls-files` and `.gitignore` separate source from
    generated output. A file name or an apparent lack of use is not evidence.
-3. Never candidates: `spec.md`, `roadmap.md`, `CLAUDE.md`, `docs/test-results/`,
+3. Never candidates: `spec.md`, `roadmap.md`, `CLAUDE.md`, `guide.md`,
+   `design-system/`, `docs/test-results/`,
    ADRs, config, and fixtures a spec still references.
 4. Present the list with the evidence per file. Delete or move only what the
    user approves, in one commit on its own branch. Move a file only when its
    location breaks a stated convention.
-5. Then steps 8 to 11, as for any change. Step 8 runs Regression selection only
-   and records it in `docs/test-results/CLEANUP-<date>.md`.
+5. Then steps 8 to 11, as for any change. Its Test scope is "Regression
+   selection only", written at the top of `docs/test-results/CLEANUP-<date>.md`,
+   where step 8 records the pass.
 
 ---
 
@@ -436,6 +482,8 @@ a cleanup task.
 
 - **Ponytail on UI with no scope rule.** Rung 1 reads a loading state as
   speculative and deletes it.
+- **UI with no design reference.** Tests pass and the screen still looks wrong.
+  MASTER.md and the visual pass catch it.
 - **Trusting the badge.** `[PONYTAIL]` reads the flag file, not the context.
   Re-arm; never infer.
 - **An E2E test nobody watched fail.** Green-by-construction hides best at this level.

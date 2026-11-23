@@ -20,18 +20,11 @@ touch, skip to `feature-workflow` directly.
 **This workflow answers: "What are we building and in what order?"**
 **Feature workflow answers: "How do we build this specific piece?"**
 
-**On entry:** The user may provide anything from a vague idea to a detailed
-requirements list. Do not wait for a complete spec. Start by reading whatever
-they gave you, identify what is unclear or missing, and ask questions to fill
-the gaps. The user does not need to know the "right" format — that is your job.
-Meet them where they are:
-
-| User provides | You do |
-|---|---|
-| A vague idea ("I want to automate tasks") | Ask what, who, where, when, how they'd verify it |
-| A paragraph describing the problem | Confirm your understanding, ask about edge cases and scope |
-| A bullet list of requirements | Validate each one is testable, ask about what's missing |
-| A full spec | Check it against step 2's rules (numbered stories, "Rejects when", no open questions), fix gaps, then step 3 |
+**On entry:** The user may provide anything from a vague idea to a full spec.
+Do not wait for a complete spec. Read what they gave you, then grill it (step
+1). Whatever they already decided is a settled branch of the design tree. A
+full spec is checked against step 2's rules, and each gap becomes a question in
+a grilling round.
 
 ---
 
@@ -40,8 +33,8 @@ Meet them where they are:
 | Situation | Action |
 |---|---|
 | Goal is foggy, can't name the questions yet | Start at step 1 |
-| Goal is clear but no spec or user stories | Start at step 2 |
-| Spec exists but work isn't sliced into phases | Check the spec against step 2's rules, then step 3 |
+| Goal is clear but no spec or user stories | Start at step 1 with the goal as a settled branch. Grill only the remaining branches |
+| Spec exists but work isn't sliced into phases | Check the spec against step 2's rules. Gaps go to step 1 as a grilling round, then step 3 |
 | Phases exist in roadmap.md, ready to build | Skip — go to `feature-workflow` step 5 |
 | Spec approved, and a requirement is added, changed, removed, or conflicts, or a redesign, schema, API, or business-rule change | **Amend** below |
 
@@ -49,20 +42,63 @@ Meet them where they are:
 
 ## 1. Understand — clarify what the user actually wants
 
-Before writing anything, extract clarity. Ask questions until you can state the
-goal in one sentence that the user agrees with.
+Grill the user until you reach a shared understanding. This is the only step
+that interviews. Step 2 writes from what was decided here.
 
-**Do:**
-- Ask what problem the user is solving, not what feature they want
-- Ask who uses it and what they see
-- Ask what already exists (existing code, APIs, services, accounts)
-- Ask what "done" looks like — how would they verify it works?
+**The design tree.** Every decision branches into the decisions that hang off
+it. The roots:
+- What problem the user is solving, not what feature they want
+- Who uses it and what they see
+- What already exists (code, APIs, services, accounts)
+- What "done" looks like and how they would verify it
+
+Step 2 needs these branches settled too, so grill them:
+- Each story's "Rejects when": bad input, duplicates, auth failure, timeout
+- Safeguard policies for consequential actions (soft or hard delete, retention,
+  who confirms), from `feature-workflow` **Safeguards by risk**
+- What is out of scope
+- For a product with a UI: product type, audience, style, light or dark, density,
+  screen widths, and any printed output with the official form it must match.
+  Detect the stack from the repo yourself
+
+**Rounds.** The frontier is every decision whose prerequisites are settled.
+Ask the whole frontier in one round, then wait for answers. A question that
+depends on another question still open in this round belongs to a later round.
+Each round's answers move the frontier. Recompute it and ask the next round.
+
+**Format.** Number each question and give your recommended answer. Word each
+question so "yes" accepts the recommendation.
+
+```
+❓ **Q1** - **<question title>**: <question body, choices if any>
+
+➡️ <your recommended answer>
+
+---
+
+❓ **Q2** - **<question title>**: <question body>
+
+➡️ <your recommended answer>
+```
+
+**Facts are yours, decisions are the user's.** When a question needs a fact
+from the environment (files, schema, tools, existing data), dispatch a subagent
+for anything beyond a quick read. Never ask the user for something you can find. Only
+questions downstream of a running lookup wait for it. Put every decision to the
+user and wait. Never answer one yourself.
+
+**Also:**
 - Challenge assumptions that sound like solutions disguised as requirements
+- Do not widen scope. If the user says "just X", that is the scope
+- A question talking cannot settle (how a screen should look or feel) needs
+  something to react to. Generate a preview with the `ui-ux-pro-max` skill
+  (`--design-system --preview`), or a throwaway prototype, and put it to the
+  user in a grilling round. Do not re-ask it in words. Palette, style, and fonts
+  are the user's decisions. A search that returns nothing falls back to the
+  skill's defaults, and you say so
 
-**Don't:**
-- Guess and build — a wrong guess costs more than a question
-- Ask all questions at once — group by topic, wait for answers
-- Widen scope — if the user says "just X", that's the scope
+**Done when** the frontier is empty: every branch visited, nothing silently
+assumed. Do not start step 2 until the user confirms the shared understanding.
 
 **Output:** A one-sentence goal statement the user confirms.
 
@@ -75,6 +111,8 @@ Example:
 ## 2. Spec — write numbered user stories with acceptance criteria
 
 Turn the confirmed goal into a spec saved as `spec.md` at the project root.
+Do not interview here. Write from the decisions grilled in step 1. A gap found
+while writing goes back to step 1 as a grilling round.
 Each user story is numbered because
 `feature-workflow` step 8 uses these numbers as the E2E test matrix.
 
@@ -89,6 +127,11 @@ Each user story is numbered because
 ## Assumptions
 - <What's already true — existing accounts, APIs, infrastructure>
 - <What the user confirmed in step 1>
+
+## Design references
+- Design system: `design-system/<slug>/MASTER.md` (page overrides in `pages/`)
+- Printed outputs: <form name> must match <reference file>
+- Screen widths: <phone, desktop>
 
 ## User Stories
 
@@ -110,9 +153,6 @@ Each user story is numbered because
 
 ## Out of Scope
 - <Things explicitly not built, and why>
-
-## Open Questions
-- <Anything unresolved — block on these before step 3>
 ```
 
 ### Rules
@@ -128,7 +168,7 @@ Each user story is numbered because
   deactivate, approve, logout, editing a business record) lists the safeguards
   from `feature-workflow` **Safeguards by risk** as "Accepts when" and "Rejects
   when" conditions. A policy the user has not decided (soft or hard delete,
-  retention) goes to Open Questions.
+  retention) goes back to step 1 as a grilling question.
 - **Name the critical workflows.** Flows that cross several stories and break
   the business when they fail. Each becomes one system E2E spec in
   `feature-workflow` step 8. Keep the list short.
@@ -136,8 +176,14 @@ Each user story is numbered because
   bad input, duplicate events, auth failure, timeout?
 - **List what's out of scope.** This feeds the "Deliberately not built" line in
   `roadmap.md` phases.
-- **Resolve open questions before step 3.** Don't slice foggy work — you'll
-  re-slice it later.
+- **No open questions before step 3.** A pasted spec's open questions go to
+  step 1 as a grilling round. Don't slice foggy work — you'll re-slice it later.
+- **UI stories point at the design.** Persist the approved design system with
+  `ui-ux-pro-max` (`--design-system --persist --output-dir <project root>`).
+  Each UI story gets "Accepts when: matches MASTER.md (or its page override) at
+  each screen width in Design references". A printed output gets "Accepts when:
+  the print matches <reference file>". Regenerating MASTER.md needs `--force`,
+  which only the user authorizes, through Amend.
 
 ---
 
@@ -183,6 +229,8 @@ Phase 2: US-5 (dashboard)                       ← builds on Phase 1
 - **A phase too big for one build** splits into Phase Na and Nb before it
   starts. Found mid-build: stop and propose the split.
 - **Bug fixes get no phase.** They run through the `feature-workflow` Gate.
+- **Each critical workflow has an owner.** The phase that ships its last story
+  writes its system spec, and that phase's "Done when" names the CW.
 
 ### Output — populate `roadmap.md`
 
@@ -198,8 +246,12 @@ Keep its `## Part` headings. The end of a Part is a full-E2E milestone in
 Once `roadmap.md` is populated:
 
 1. Confirm the user agrees with the phases and their order
-2. Identify the phase marked `NEXT`
-3. Hand it to `feature-workflow` starting at step 5
+2. Fill CLAUDE.md "Project facts" from the spec and the repo: trust boundaries
+   (auth, roles, and every permission rule the spec names), UI test driver,
+   Test command, Full E2E command. A tool that does not exist yet reads
+   `none yet, added in Phase <N>`, and that phase installs it as its first task
+3. Identify the phase marked `NEXT`
+4. Hand it to `feature-workflow` starting at step 5
 
 **The handoff:**
 
@@ -228,13 +280,44 @@ story can change another). Apply each row that matches.
 | Clarification, story text unchanged | no edit | no edit | continue |
 | A story in the NEXT phase changes | edit the story, add a `Changed` line | edit the NEXT phase only if its outcomes or "Done when" change | revise the plan (step 5), cut the revision (step 6) |
 | New requirement | new US number | add it to a LATER phase or a new phase | current phase unchanged unless the user says otherwise |
-| Conflicts with an approved story | no edit until the user picks | no edit | stop, show both stories, user decides, then classify again |
+| Conflicts with an approved story | no edit until the user picks | no edit | stop, show both stories, put the choice to the user as a grilling round (step 1 format), then classify again |
 | Changes a story of a DONE phase | edit the story, add a `Changed` line | new LATER phase with the line `Reopens Phase <N>: <US-n changed, or what changes>`. The DONE entry stays untouched | built as its own phase |
 | Requirement removed or replaced | `Withdrawn` line, number kept, removed from `## Critical workflows` | remove it from LATER phases. Already shipped: a new phase `Reopens Phase <N>: US-<n> withdrawn`, done when the behavior is gone and the stories it touched still pass | the phase that removes the behavior deletes the tests of that behavior only. A test filed under the withdrawn story that covers behavior still shipped moves to the story that owns it. Its stored data, including records still in progress, stays unless the user decides otherwise |
-| Undo a past decision | edit the story, `Changed` line naming the date of the behavior it restores. A technical decision with no story: no edit | a new phase. A technical decision or a recorded user decision gets the line `Supersedes Phase <N> convention: <old> → <new>, <reason>` (or `decision`) | a forward change, built as a phase. To `git revert` instead, see **Reverting a phase** below |
+| Undo a past decision | edit the story, `Changed` line naming the date of the behavior it restores. A technical decision with no story: no edit | a new phase. A technical decision or a recorded user decision gets the line `Supersedes Phase <N> convention: <old> → <new>, <reason>` (or `decision`) | a forward change, built as a phase. To `git revert` instead, see **Reverting a phase** after step 4 |
 | UI or flow redesign | conditions unchanged: no edit. Conditions changed: as for a changed story | a new phase, `Reopens Phase <N>: <what changes>` | its E2E specs are updated without weakening any assertion |
 | Schema, API, or business-rule change | as above for each affected story. No story text changes: no edit | a new phase, even when no story text changes. Exception: every affected story is in the NEXT phase and none is in a DONE phase, then revise NEXT as for a changed NEXT story and put any `Supersedes` line in it | the Test scope must include Regression selection (`feature-workflow` step 8) |
-| Schema change with existing data | as above | as above | the plan includes the migration, how existing values map to the new columns (the user approves the mapping), a backup, a way to reverse it that touches only rows the migration changed, and every reader of the old columns (code, APIs, reports, exports, and installed clients still running older builds). The dry run reports each case of the mapping with real examples, so the user approves the mapping on the data, not on a count. The migration and its reverse run first on a test copy the user provides (an export or backup restored into a throwaway deployment). The schema changes in two deploys: first add the new fields as optional and migrate, then remove the old field in a later phase, because the deployed schema must accept every existing row. The plan states the production order (deploy, dry run, run) for the user to carry out. If a push deploys automatically, the user decides when the change is merged. Never run it against production data yourself. Any loss of existing data needs the user's decision |
+| Schema change with existing data | as above | as above | the plan includes the migration, how existing values map to the new columns (the user approves the mapping), a backup, a way to reverse it that touches only rows the migration changed, and every reader of the old columns (code, APIs, reports, exports, and installed clients still running older builds). Exception: adding an optional field that no existing value moves into needs only the migration, its default, and the readers. Backup, reverse, and test copy apply once existing values move or change. The dry run reports each case of the mapping with real examples, so the user approves the mapping on the data, not on a count. The migration and its reverse run first on a test copy the user provides (an export or backup restored into a throwaway deployment). The schema changes in two deploys: first add the new fields as optional and migrate, then remove the old field in a later phase, because the deployed schema must accept every existing row. The plan states the production order (deploy, dry run, run) for the user to carry out. If a push deploys automatically, the user decides when the change is merged. Never run it against production data yourself. Any loss of existing data needs the user's decision |
+
+**2. Impact.** Read `spec.md`, `roadmap.md`, the code and callers in the
+affected files, their tests, the latest `docs/test-results/`, and the schema.
+Read the NEXT and every Paused branch too (`git diff <default>...<branch>`), since
+unmerged code can bypass the change. List every reader and every writer of the
+changed fields or rules, on the default branch and on those branches.
+List the affected stories, the phases that shipped them (the "Shipped as" lines
+in `roadmap.md`), the modules, tables, APIs, existing data, and their E2E specs
+(feature and critical workflow). Show the user this list, the classification,
+and a plan summary as a change note. The approved change note becomes the
+header of the step 5 plan, which does not restate it. `Changed` and `Reopens`
+lines stay one line each.
+
+**3. Approval.** The change note needs the user's OK before any doc or code
+change. A clarification that edits nothing is the only exception. Decisions the
+change note raises (data mapping, retention, which story wins) are asked as a
+grilling round in step 1 format, and approval waits until that frontier is empty.
+
+**4. Return** to `feature-workflow` step 5 when the affected phase is NEXT. Otherwise
+it waits in the roadmap. One phase at a time still holds: a reopen phase waits as LATER unless the user moves it to
+NEXT. To build it ahead of an unfinished NEXT phase, the unfinished phase goes
+back to LATER with the line `Paused <date>: <reason>`, keeps its branch, and
+becomes NEXT again when the new phase is DONE. On resume, rebase its branch on
+the default branch. Resolve conflicts in source files and regenerate codegen
+(for example `npx convex codegen`), never hand-merge it. Then rerun
+`feature-workflow` step 5 against what merged meanwhile. Its Test scope adds the
+feature and system specs of those phases. If no phase is NEXT, the new phase becomes NEXT. When one Amend creates
+several phases, the user sets their order and only the first becomes NEXT. New
+phases go under a new `## Part` heading when they don't serve an unfinished
+Part's goal, and always when every phase is DONE. Finishing that Part triggers a
+full E2E run. New phases take the next unused phase number.
 
 **Reverting a phase.** Only when the user asks, and after the change note is approved (Amend step 3):
 
@@ -253,8 +336,8 @@ story can change another). Apply each row that matches.
 2. If the phase changed the schema and its migration ran anywhere, run the
    reverse migration there first. The old schema rejects migrated rows, so the
    revert cannot deploy until then.
-3. `git revert -m 1 <merge>`. For a squash or rebase merge, revert the phase's
-   commits.
+3. On a new branch from `<default>`, `git revert -m 1 <merge>`. For a squash or
+   rebase merge, revert the phase's commits.
 4. The revert deletes files the merge added. Restore the results file, and every
    E2E spec (feature or system) that also covers a story still shipped, then
    commit them:
@@ -266,36 +349,11 @@ story can change another). Apply each row that matches.
    unused phase number and the line
    `Reverts Phase <N> (<revert hash>)` written after the revert commit. Its Test
    scope covers the remaining stories the reverted phase touched. Done when the
-   reverted behavior is gone and those stories pass.
+   reverted behavior is gone and those stories pass. The revert phase is NEXT.
+   An unfinished NEXT phase is paused as in step 4, so step 12 marks the revert
+   DONE.
 6. The reverted stories get `Withdrawn` lines. The reverted DONE entry stays.
    Data the reverted code wrote is the user's decision.
-
-**2. Impact.** Read `spec.md`, `roadmap.md`, the code and callers in the
-affected files, their tests, the latest `docs/test-results/`, and the schema.
-Read the NEXT and every Paused branch too (`git diff <default>...<branch>`), since
-unmerged code can bypass the change. List every reader and every writer of the
-changed fields or rules, on the default branch and on those branches.
-List the affected stories, the phases that shipped them (the "Shipped as" lines
-in `roadmap.md`), the modules, tables, APIs, existing data, and their E2E specs
-(feature and critical workflow). Show the user this list, the classification,
-and a plan summary as a change note.
-
-**3. Approval.** The change note needs the user's OK before any doc or code
-change. A clarification that edits nothing is the only exception.
-
-**4. Return** to `feature-workflow` step 5 when the affected phase is NEXT. Otherwise
-it waits in the roadmap. One phase at a time still holds: a reopen phase waits as LATER unless the user moves it to
-NEXT. To build it ahead of an unfinished NEXT phase, the unfinished phase goes
-back to LATER with the line `Paused <date>: <reason>`, keeps its branch, and
-becomes NEXT again when the new phase is DONE. On resume, rebase its branch on
-the default branch. Resolve conflicts in source files and regenerate codegen
-(for example `npx convex codegen`), never hand-merge it. Then rerun
-`feature-workflow` step 5 against what merged meanwhile. Its Test scope adds the
-feature and system specs of those phases. If no phase is NEXT, the new phase becomes NEXT. When one Amend creates
-several phases, the user sets their order and only the first becomes NEXT. New
-phases go under a new `## Part` heading when they don't serve an unfinished
-Part's goal, and always when every phase is DONE. Finishing that Part triggers a
-full E2E run. New phases take the next unused phase number.
 
 ---
 
@@ -322,7 +380,11 @@ Amend  ←── requirement change at any step ──→  back to step 5
 ## Failure modes
 
 - **Skipping step 1.** Building a spec from assumptions produces a spec you
-  rewrite after the first phase ships. One round of questions costs less.
+  rewrite after the first phase ships. A few grilling rounds cost less.
+- **Answering your own decisions.** A grilling round the user did not answer
+  produced your opinion, not their spec.
+- **Interviewing in step 2.** Gaps found while writing go back to step 1 as a
+  round, so the tree stays complete.
 - **User stories without "rejects when."** The happy path works. Everything
   else is discovered in production.
 - **Slicing by layer instead of by story.** Three phases of invisible
