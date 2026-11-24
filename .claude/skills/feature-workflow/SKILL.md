@@ -43,7 +43,9 @@ explicitly requested, never speculative (ladder rung 1 does not apply):
   (or its page override) defines
 
 Lazy in the UI means *no elements beyond the design and no new components* —
-reuse a primitive, reuse a token. Never fewer states, a plainer control, or a
+reuse a primitive, reuse a token. A component MASTER.md needs that neither the
+codebase nor the stack provides is built once, named in the plan, never swapped
+for a plainer control. Never fewer states, a plainer control, or a
 looser match to MASTER.md.
 
 Trade UI away for performance only with a measurement showing the current
@@ -179,7 +181,7 @@ Where a project's own instructions name a different driver for its UI, that wins
 | Situation | Start at |
 |---|---|
 | Cleanup of files or docs | **Cleanup** below |
-| Bug, small fix, or small improvement that changes no story, schema, API, or business rule, and is not a redesign (a new layout or flow for a page or module) | a branch from the default branch, step 6 re-arm (no plan to cut, re-arm only), then steps 7–11 (`systematic-debugging` first for a bug). No roadmap entry. Before step 7, write the step 5 Test scope block once, at the top of `docs/test-results/FIX-<date>-<slug>.md`, where step 8 records the pass. Code that breaks an existing "Accepts when" or "Rejects when" condition is a fix. A change to the condition itself is Amend |
+| Bug, small fix, or small improvement that changes no story, schema, API, or business rule, and is not a redesign (a new layout or flow for a page or module) | a branch from the default branch, step 6 re-arm (no plan to cut, re-arm only), then steps 7–11 (`systematic-debugging` first for a bug). No roadmap entry. Before step 7, write the step 5 Test scope block once, at the top of `docs/test-results/FIX-<date>-<slug>.md`, where step 8 records the pass. A fix that touches UI gets the step 8 visual pass and the user's screenshot approval. Code that breaks an existing "Accepts when" or "Rejects when" condition is a fix. A change to the condition itself is Amend |
 | A requirement is added, changed, removed, or conflicts, or a redesign, schema, API, or business-rule change, before, during, or after the build | pause. Run `project-workflow` **Amend**, then go where its table sends you. A change to the NEXT phase resumes at step 5 with the plan revised, not rewritten |
 | Spec or plan already decided | step 5. A feature with no roadmap phase gets one first (`project-workflow` step 3), so it has a phase number and a "Shipped as" line |
 | Can't yet name the questions | stop — use `project-workflow` |
@@ -199,6 +201,10 @@ Skip `superpowers:brainstorming` if a map or spec already decided it. Keep it fo
 implementation-level choices nothing has reached yet.
 
 A phase from an Amend starts with the approved change note as its header.
+
+A phase with UI and no `design-system/<slug>/MASTER.md` stops here. A grilling
+round (`project-workflow` step 1) generates the design with `ui-ux-pro-max`, the
+user approves the preview, and it is persisted before the plan is written.
 
 A phase with UI reads `design-system/<slug>/MASTER.md` and the page override,
 and runs `ui-ux-pro-max` with `--stack <stack>` for implementation rules. The
@@ -310,12 +316,23 @@ pass over a story a spec covers.
 
 The phase that ships a critical workflow's last story writes its system spec.
 
-**Visual pass** (phases that change UI). Screenshot each changed screen at each
-width in the spec's Design references, in a real browser. Check it against
-MASTER.md (or the page override) and the Pre-Delivery Checklist in
-`ui-ux-pro-max`'s `references/pro-rules.md`. A printed output is exported to PDF
-and compared with its reference file. Findings are fixed in this phase. The
-results file lists the screens checked and links the screenshots.
+**Visual pass** (any change that touches UI: phase, fix, or cleanup).
+Screenshot each changed screen at each width in the spec's Design references,
+in a real browser. Check it against MASTER.md (or the page override) and the
+`ui-ux-pro-max` checklist for the target: web uses `references/quick-reference.md`
+§1–§3, §5, §6, and §8, native uses the Pre-Delivery Checklist in
+`references/pro-rules.md`. A printed output is exported to PDF and compared with
+its reference file. Findings are fixed in this change. The results file lists
+the screens checked and links the screenshots. The user approves them before
+step 11.
+
+**Screenshot baselines.** After the user approves, each screen at each width
+becomes a committed screenshot assertion (Playwright `toHaveScreenshot`, or the
+native driver's equivalent) in the spec of the story that ships the screen.
+Regression selection reruns them like any spec, so the visual pass is never
+redone by hand. A change to MASTER.md tokens, a shared stylesheet, or a shared
+UI component reruns every screenshot assertion. A baseline is updated only for
+an intended change the user approved, never to get green.
 
 **Regression selection.** Before running anything from a DONE phase:
 
@@ -445,7 +462,8 @@ reviewer's suggestion).
 
 ## 11. `superpowers:finishing-a-development-branch`
 
-Merge, rebase, or abandon — decided once.
+Merge, rebase, or abandon — decided once. A change that touches UI merges only
+after the user approved its screenshots in step 8.
 
 ## 12. Roadmap
 
@@ -467,7 +485,7 @@ a cleanup task.
    scripts, and CI. `git ls-files` and `.gitignore` separate source from
    generated output. A file name or an apparent lack of use is not evidence.
 3. Never candidates: `spec.md`, `roadmap.md`, `CLAUDE.md`, `guide.md`,
-   `design-system/`, `docs/test-results/`,
+   `design-system/`, screenshot baselines, `docs/test-results/`,
    ADRs, config, and fixtures a spec still references.
 4. Present the list with the evidence per file. Delete or move only what the
    user approves, in one commit on its own branch. Move a file only when its

@@ -40,67 +40,63 @@ a grilling round.
 
 ---
 
-## 1. Understand — clarify what the user actually wants
+## 1. Understand — grill until shared understanding
 
-Grill the user until you reach a shared understanding. This is the only step
-that interviews. Step 2 writes from what was decided here.
+Interview the user relentlessly until you reach a shared understanding. Map this
+as a **design tree**: every decision branches into the decisions that hang off
+it. The tree grows from whatever the user brought.
 
-**The design tree.** Every decision branches into the decisions that hang off
-it. The roots:
-- What problem the user is solving, not what feature they want
-- Who uses it and what they see
-- What already exists (code, APIs, services, accounts)
-- What "done" looks like and how they would verify it
+Work the tree in **rounds**. The **frontier** is every decision whose
+prerequisites are already settled: the questions you can ask _now_ without
+guessing at answers you haven't heard yet. Ask the whole frontier in one round:
+number each question and give your recommended answer. Then wait for the user's
+answers before the next round.
 
-Step 2 needs these branches settled too, so grill them:
-- Each story's "Rejects when": bad input, duplicates, auth failure, timeout
-- Safeguard policies for consequential actions (soft or hard delete, retention,
-  who confirms), from `feature-workflow` **Safeguards by risk**
-- What is out of scope
-- For a product with a UI: product type, audience, style, light or dark, density,
-  screen widths, and any printed output with the official form it must match.
-  Detect the stack from the repo yourself
-
-**Rounds.** The frontier is every decision whose prerequisites are settled.
-Ask the whole frontier in one round, then wait for answers. A question that
-depends on another question still open in this round belongs to a later round.
-Each round's answers move the frontier. Recompute it and ask the next round.
-
-**Format.** Number each question and give your recommended answer. Word each
-question so "yes" accepts the recommendation.
+Format a round like so:
 
 ```
-❓ **Q1** - **<question title>**: <question body, choices if any>
+❓ **Q1** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
 
 ➡️ <your recommended answer>
 
 ---
 
-❓ **Q2** - **<question title>**: <question body>
+❓ **Q2** - **<question title>**: <question body, might be multiple paragraphs, including multiple choices>
 
 ➡️ <your recommended answer>
 ```
 
-**Facts are yours, decisions are the user's.** When a question needs a fact
-from the environment (files, schema, tools, existing data), dispatch a subagent
-for anything beyond a quick read. Never ask the user for something you can find. Only
-questions downstream of a running lookup wait for it. Put every decision to the
-user and wait. Never answer one yourself.
+Word each question so "yes" accepts your recommended answer.
 
-**Also:**
-- Challenge assumptions that sound like solutions disguised as requirements
-- Do not widen scope. If the user says "just X", that is the scope
-- A question talking cannot settle (how a screen should look or feel) needs
-  something to react to. Generate a preview with the `ui-ux-pro-max` skill
-  (`--design-system --preview`), or a throwaway prototype, and put it to the
-  user in a grilling round. Do not re-ask it in words. Palette, style, and fonts
-  are the user's decisions. A search that returns nothing falls back to the
-  skill's defaults, and you say so
+Each round the user answers reshapes the tree: settled decisions push the
+frontier outward and unblock questions that depended on them. Recompute the
+frontier and ask the next round. A question whose answer depends on another
+question still open in this round belongs to a _later_ round, not this one.
 
-**Done when** the frontier is empty: every branch visited, nothing silently
-assumed. Do not start step 2 until the user confirms the shared understanding.
+Finding _facts_ is your job, never the user's. When a frontier question needs a
+fact from the environment (filesystem, tools, etc.), dispatch a sub-agent to
+find it. Don't ask the user for anything you could look up yourself. Don't
+block on it: a running exploration is an unsettled prerequisite, so only the
+questions downstream of it wait for the sub-agent to report. Ask the rest of
+the frontier now. The _decisions_ are the user's: put each to them and wait.
 
-**Output:** A one-sentence goal statement the user confirms.
+**Targeted to the spec.** The tree is not complete until step 2 can write every
+line from a decision: each story's actor and outcome, its "Accepts when" and
+"Rejects when", the safeguard policy of each consequential action
+(`feature-workflow` **Safeguards by risk**), what is out of scope, and for a UI
+the design references. A missing one is a branch still open. A branch that does
+not serve the goal is asked as "Out of scope?" with yes recommended.
+
+A question talking cannot settle (how a screen looks or feels) gets something
+to react to: a `ui-ux-pro-max` preview (`--design-system --preview`) or a
+throwaway prototype, put to the user in a round.
+
+The session is done when the frontier is empty: every branch of the design tree
+visited, nothing left silently assumed. Do not act on it until the user confirms
+you have reached a shared understanding.
+
+**Output:** the shared understanding stated as a one-sentence goal the user
+confirms. Step 2 writes from it and does not interview.
 
 Example:
 > **Goal:** When a matter changes stage in Clio, automatically create the
@@ -284,7 +280,7 @@ story can change another). Apply each row that matches.
 | Changes a story of a DONE phase | edit the story, add a `Changed` line | new LATER phase with the line `Reopens Phase <N>: <US-n changed, or what changes>`. The DONE entry stays untouched | built as its own phase |
 | Requirement removed or replaced | `Withdrawn` line, number kept, removed from `## Critical workflows` | remove it from LATER phases. Already shipped: a new phase `Reopens Phase <N>: US-<n> withdrawn`, done when the behavior is gone and the stories it touched still pass | the phase that removes the behavior deletes the tests of that behavior only. A test filed under the withdrawn story that covers behavior still shipped moves to the story that owns it. Its stored data, including records still in progress, stays unless the user decides otherwise |
 | Undo a past decision | edit the story, `Changed` line naming the date of the behavior it restores. A technical decision with no story: no edit | a new phase. A technical decision or a recorded user decision gets the line `Supersedes Phase <N> convention: <old> → <new>, <reason>` (or `decision`) | a forward change, built as a phase. To `git revert` instead, see **Reverting a phase** after step 4 |
-| UI or flow redesign | conditions unchanged: no edit. Conditions changed: as for a changed story | a new phase, `Reopens Phase <N>: <what changes>` | its E2E specs are updated without weakening any assertion |
+| UI or flow redesign | conditions unchanged: no edit. Conditions changed: as for a changed story | a new phase, `Reopens Phase <N>: <what changes>` | its E2E specs are updated without weakening any assertion. Screenshot baselines change only after the user approves the new screenshots |
 | Schema, API, or business-rule change | as above for each affected story. No story text changes: no edit | a new phase, even when no story text changes. Exception: every affected story is in the NEXT phase and none is in a DONE phase, then revise NEXT as for a changed NEXT story and put any `Supersedes` line in it | the Test scope must include Regression selection (`feature-workflow` step 8) |
 | Schema change with existing data | as above | as above | the plan includes the migration, how existing values map to the new columns (the user approves the mapping), a backup, a way to reverse it that touches only rows the migration changed, and every reader of the old columns (code, APIs, reports, exports, and installed clients still running older builds). Exception: adding an optional field that no existing value moves into needs only the migration, its default, and the readers. Backup, reverse, and test copy apply once existing values move or change. The dry run reports each case of the mapping with real examples, so the user approves the mapping on the data, not on a count. The migration and its reverse run first on a test copy the user provides (an export or backup restored into a throwaway deployment). The schema changes in two deploys: first add the new fields as optional and migrate, then remove the old field in a later phase, because the deployed schema must accept every existing row. The plan states the production order (deploy, dry run, run) for the user to carry out. If a push deploys automatically, the user decides when the change is merged. Never run it against production data yourself. Any loss of existing data needs the user's decision |
 
