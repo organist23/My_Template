@@ -162,7 +162,7 @@ Start each phase in a fresh session:
 | 8. E2E | this phase's stories, plus DONE-phase specs only if regression selection picks them. Full suite only on a trigger. Visual pass on changed screens and printed forms | `Run step 8. Show the Test scope first.` |
 | 9. Verify | runs every command, reads output | `Verify before claiming done.` |
 | 10. Review | complexity, correctness, UI if the diff touches UI, then security if gated | `/ponytail-review`, then `/code-review`, then the UI review pass, then `/security-review` |
-| 11. Merge | merge, rebase, or abandon | `Finish the branch.` |
+| 11. Merge | merge, rebase, or abandon. A UI change merges only after you approve its screenshots, which become committed baselines | `Finish the branch.` |
 | 12. Roadmap | marks phase DONE, promotes next phase to NEXT | `Apply the roadmap rule in CLAUDE.md.` |
 
 Then start a new session and repeat Stage B for the next NEXT phase.
